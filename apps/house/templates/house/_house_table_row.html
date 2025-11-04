@@ -1,0 +1,40 @@
+<tr>
+    <td class="px-6 py-4 whitespace-nowrap">
+      <a href="{% url 'house:house_detail' house.id %}" class="block text-sm font-medium text-blue-600 hover:text-blue-800 truncate" title="{{ house.address }}">
+        {{ house.address }}
+      </a>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+      <p class="text-sm text-slate-600">{{ house.house_type }}</p>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+      <p class="text-sm text-slate-600">{{ house.total_price }} 萬</p>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+      {% if house.agent %}
+        <p class="text-sm text-slate-600">{{ house.agent.name }}</p>
+      {% else %}
+        <p class="text-sm text-slate-500">無中介資料</p>
+      {% endif %}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+      <div class="flex items-center justify-end gap-2">
+        
+        <a href="{% url 'house:house_edit' house.id %}"
+           class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+          編輯
+        </a>
+        
+        <form method="post" action="{% url 'house:house_list' %}"
+              onsubmit="return confirm('確定要刪除這筆房屋資料嗎？');">
+          {% csrf_token %}
+          <input type="hidden" name="house_id" value="{{ house.id }}">
+          <button type="submit"
+            class="inline-flex items-center rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400">
+            刪除
+          </button>
+        </form>
+  
+      </div>
+    </td>
+  </tr>

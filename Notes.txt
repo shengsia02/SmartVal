@@ -6,3 +6,10 @@ password: sys20022002
 CSS 風格：
 tailwind 好看
 boostrap 容器化
+
+---
+
+進度表：
+
+11/5
+可以開始弄靜態了

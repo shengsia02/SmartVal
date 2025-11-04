@@ -10,7 +10,7 @@ class HouseAdmin(admin.ModelAdmin):
 
 @admin.register(HouseDetail)
 class HouseDetailAdmin(admin.ModelAdmin):
-    list_display = ('city', 'town', 'house_age', 'floor_area', 'land_area', 'unit_price', 'sold_time', 'description')  # 列表顯示欄位
+    list_display = ('city', 'town', 'house_age', 'floor_area', 'land_area', 'unit_price', 'sold_time')  # 列表顯示欄位
     list_filter = ('city', 'town',)  # 篩選器
     search_fields = ('city', 'town',)  # 搜尋欄位
 

@@ -17,8 +17,11 @@ class HouseDetail(models.Model):
     floor_area = models.DecimalField(max_digits=5, decimal_places=2, verbose_name='建坪')
     land_area = models.DecimalField(max_digits=5, decimal_places=2, verbose_name='地坪')
     unit_price = models.DecimalField(max_digits=5, decimal_places=2, verbose_name='單價（萬/坪）')
-    sold_time = models.DateField(default=date.today, verbose_name='出售日期')
-    description = models.TextField(blank=True, verbose_name='房屋簡介')
+    sold_time = models.DateField(verbose_name='出售日期')
+    
+    # 【已移除】下面這行 description 欄位已被刪除
+    # description = models.TextField(blank=True, verbose_name='房屋簡介')
+    
     house_image = models.ImageField(upload_to='house_images/', null=True, blank=True, verbose_name='房屋圖片')
 
     class Meta:
