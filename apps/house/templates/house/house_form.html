@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale-1" />
+  <title>{{ page_title }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800">
+  <header class="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
+    <div class="mx-auto max-w-6xl px-4 py-5">
+      <h1 class="text-2xl font-semibold tracking-tight">{{ page_title }}</h1>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-6xl px-4 py-8">
+    
+    <form method="post" action="" enctype="multipart/form-data"> 
+      {% csrf_token %}
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {% if form.non_field_errors %}
+          <div class="md:col-span-2 rounded-md bg-red-50 p-4">
+            <ul class="list-disc space-y-1 pl-5 text-sm text-red-700">
+              {% for error in form.non_field_errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            房屋地址 <span class="text-red-500">*</span>
+          </label>
+          {{ form.address }}
+          {% for error in form.address.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            房屋類型 <span class="text-red-500">*</span>
+          </label>
+          {{ form.house_type }}
+          {% for error in form.house_type.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            總價 (萬) <span class="text-red-500">*</span>
+          </label>
+          {{ form.total_price }}
+          {% for error in form.total_price.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            房屋中介 <span class="text-red-500">*</span>
+          </label>
+          {{ form.agent }}
+          {% for error in form.agent.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            買家 <span class="text-red-500">*</span>
+          </label>
+            {{ form.buyers }}
+          {% for error in form.buyers.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div class="md:col-span-2 border-t border-slate-200 pt-6">
+          <h2 class="text-lg font-medium text-slate-900">房屋詳細資料</h2>
+        </div>
+        
+        {% if detail_form.non_field_errors %}
+          <div class="md:col-span-2 rounded-md bg-red-50 p-4">
+            <ul class="list-disc space-y-1 pl-5 text-sm text-red-700">
+              {% for error in detail_form.non_field_errors %}
+                <li>{{ error }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            縣市 <span class="text-red-500">*</span>
+          </label>
+          {{ detail_form.city }}
+          {% for error in detail_form.city.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            行政區 <span class="text-red-500">*</span>
+          </label>
+          {{ detail_form.town }}
+          {% for error in detail_form.town.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            屋齡 (年) <span class="text-red-500">*</span>
+          </label>
+          {{ detail_form.house_age }}
+          {% for error in detail_form.house_age.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            建坪 <span class="text-red-500">*</span>
+          </label>
+          {{ detail_form.floor_area }}
+          {% for error in detail_form.floor_area.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            地坪 <span class="text-red-500">*</span>
+          </label>
+          {{ detail_form.land_area }}
+          {% for error in detail_form.land_area.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-slate-700">
+            單價 (萬/坪) <span class="text-red-500">*</span>
+          </label>
+          {{ detail_form.unit_price }}
+          {% for error in detail_form.unit_price.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-slate-700">
+            出售日期 <span class="text-red-500">*</span>
+          </label>
+          {{ detail_form.sold_time }}
+          {% for error in detail_form.sold_time.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-slate-700">房屋簡介</label>
+          {{ detail_form.description }}
+          {% for error in detail_form.description.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+        </div>
+        
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-slate-700">房屋圖片</label>
+          {{ detail_form.house_image }}
+          {% for error in detail_form.house_image.errors %}
+            <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+          {% endfor %}
+          {% if detail_form.instance.house_image %}
+            <p class="mt-2 text-sm text-slate-500">
+              目前圖片: <a href="{{ detail_form.instance.house_image.url }}" target="_blank" class="text-blue-600 hover:underline">{{ detail_form.instance.house_image.name }}</a>
+            </p>
+          {% endif %}
+        </div>
+
+      </div> <div class="flex items-center gap-x-4 mt-8 pt-6 border-t border-slate-200">
+        <button type="submit"
+          class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+          儲存
+        </button>
+        <a href="{% url 'house:house_list' %}"
+          class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400">
+          取消
+        </a>
+      </div>
+
+    </form>
+  </main>
+</body>
+</html>
