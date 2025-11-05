@@ -12,7 +12,7 @@ class House(models.Model):
         verbose_name='房屋類型'
     )
     total_price = models.IntegerField(
-        verbose_name='總價（萬/坪）'
+        verbose_name='總價格（萬/坪）'
     )
     buyers = models.ForeignKey(
         Buyer, 
@@ -25,7 +25,7 @@ class House(models.Model):
         Agent, 
         on_delete=models.CASCADE, 
         related_name='agent', 
-        verbose_name='房屋中介', 
+        verbose_name='房屋仲介', 
         null=True, blank=True
     )
     created_at = models.DateField(

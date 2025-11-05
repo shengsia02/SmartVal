@@ -23,7 +23,7 @@
           
           <p><strong class="font-medium text-slate-900 w-28 inline-block">地址：</strong> {{ house.address }}</p>
           <p><strong class="font-medium text-slate-900 w-28 inline-block">房屋類型：</strong> {{ house.house_type }}</p>
-          <p><strong class="font-medium text-slate-900 w-28 inline-block">總價：</strong> {{ house.total_price }} 萬</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">總價格：</strong> {{ house.total_price }} 萬</p>
           
           {% if house.detail %}
             <p><strong class="font-medium text-slate-900 w-28 inline-block">縣市：</strong> {{ house.detail.city }}</p>
@@ -38,7 +38,7 @@
           {% endif %}
           
           <p>
-            <strong class="font-medium text-slate-900 w-28 inline-block">房屋中介：</strong>
+            <strong class="font-medium text-slate-900 w-28 inline-block">仲介：</strong>
             {% if house.agent %}
               {{ house.agent.name }}
             {% else %}

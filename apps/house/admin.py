@@ -3,7 +3,7 @@ from .models import House, HouseDetail, Agent, Buyer
 
 @admin.register(House)
 class HouseAdmin(admin.ModelAdmin):
-    list_display = ('address', 'house_type', 'total_price', 'agent', 'created_at')
+    list_display = ('address', 'house_type', 'total_price', 'buyers', 'agent', 'created_at')
     list_filter = ('house_type', 'agent', 'buyers',)
     search_fields = ('house_type', 'agent', 'buyers',)
     ordering = ('-total_price',)
@@ -16,7 +16,7 @@ class HouseDetailAdmin(admin.ModelAdmin):
 
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):
-    list_display = ('name', 'phone', 'company', 'branch', 'city', 'town',)
+    list_display = ('name', 'phone', 'email', 'company', 'branch', 'city', 'town',)
     list_filter = ('city', 'town', 'company',)
     search_fields = ('name', 'company', 'branch', 'city', 'town',)
 
