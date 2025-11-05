@@ -1,0 +1,47 @@
+<tr id="agent-row-{{ agent.id }}">
+    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 row-index">
+      {{ forloop.counter }}
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+      <a href="{% url 'house:agent_detail' agent.id %}" class="block text-sm font-medium text-blue-600 hover:text-blue-800 truncate" title="{{ agent.name }}">
+        {{ agent.name }}
+      </a>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+      <p class="text-sm text-slate-600">
+        {{ agent.company|default:"" }}
+        {% if agent.company and agent.branch %}-{% endif %}
+        {{ agent.branch|default:"" }}
+        {% if not agent.company and not agent.branch %}--{% endif %}
+      </p>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+      <p class="text-sm text-slate-600">{{ agent.phone|default:"--" }}</p>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap">
+      <p class="text-sm text-slate-600">{{ agent.city }}{{ agent.town }}</p>
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+      <div class="flex items-center justify-end gap-2">
+        
+        {# 【!! 修改 !!】 顏色從 yellow 改成 blue #}
+        <button type="button" 
+                class="open-edit-modal-btn inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                data-url="{% url 'house:agent_edit' agent.id %}">
+          編輯
+        </button>
+        
+        <form method="post" action="{% url 'house:agent_list' %}"
+              class="delete-form"
+              onsubmit="return confirm('確定要刪除這筆仲介資料嗎？');">
+          {% csrf_token %}
+          <input type="hidden" name="agent_id" value="{{ agent.id }}">
+          <button type="submit"
+            class="inline-flex items-center rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700">
+            刪除
+          </button>
+        </form>
+    
+        </div>
+      </td>
+    </tr>

@@ -1,97 +1,73 @@
-<!-- templates/house/house_detail.html -->
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{ page_title }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-slate-50 text-slate-800">
+{% extends 'core/base_admin.html' %}
 
-  <!-- Header -->
-  <header class="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
-    <div class="mx-auto max-w-6xl px-4 py-5 flex items-center justify-between">
-      <h1 class="text-2xl font-semibold tracking-tight">{{ page_title }}</h1>
-  
-      </div>
-  </header>
+{% block title %}房屋資訊 - {{ house.address }}{% endblock %}
 
-  <!-- Main -->
-  <main class="mx-auto max-w-6xl px-4 py-8">
-    <div class="bg-white shadow-md rounded-lg p-6">
-      <h2 class="text-xl font-semibold text-slate-900">{{ house.address }}</h2>
-      <p class="mt-2 text-sm text-slate-600">房屋類型：{{ house.house_type }}</p>
-      <p class="mt-2 text-sm text-slate-600">總價：{{ house.total_price }} 萬</p>
+{% block content %}
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-3xl font-bold tracking-tight text-slate-900">
+      房屋資訊
+    </h1>
+    <a href="{% url 'house:house_list' %}"
+       class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+      &larr; 返回列表
+    </a>
+  </div>
 
-      <!-- 顯示 HouseDetail 的詳細資訊 -->
-      <div class="mt-6 border-t pt-4">
+  <div class="bg-white shadow-md rounded-lg p-6">
+    
+    <div class="flex flex-col md:flex-row gap-6">
 
-        <div class="flex items-center justify-between mb-2">
-        <h3 class="text-sm font-semibold text-slate-800">房屋詳細資訊</h3>
-
-                  </div>
-
-        {% if house.detail %}
-          <p class="mt-2 text-sm text-slate-600">縣市：{{ house.detail.city }}</p>
-          <p class="mt-2 text-sm text-slate-600">行政區：{{ house.detail.town }}</p>
-          <p class="mt-2 text-sm text-slate-600">屋齡：{{ house.detail.house_age }} 年</p>
-          <p class="mt-2 text-sm text-slate-600">建坪：{{ house.detail.floor_area }} 坪</p>
-          <p class="mt-2 text-sm text-slate-600">地坪：{{ house.detail.land_area }} 坪</p>
-          <p class="mt-2 text-sm text-slate-600">單價：{{ house.detail.unit_price }} 萬/坪</p>
-          <p class="mt-2 text-sm text-slate-600">出售日期：{{ house.detail.sold_time|date:"Y-m-d" }}</p>
-          <p class="mt-2 text-sm text-slate-600">房屋簡介：{{ house.detail.description }}</p>
+      <div class="flex-grow">
+        {# 【!! 修正 !!】 資訊字體大小從 text-sm 調整為 text-lg #}
+        <div class="space-y-4 text-lg text-slate-700"> 
           
-          {% if house.detail.house_image %}
-            <div class="mt-4">
-              <img src="{{ house.detail.house_image.url }}" alt="房屋圖片" class="w-full rounded-lg shadow-md">
-            </div>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">地址：</strong> {{ house.address }}</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">房屋類型：</strong> {{ house.house_type }}</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">總價：</strong> {{ house.total_price }} 萬</p>
+          
+          {% if house.detail %}
+            <p><strong class="font-medium text-slate-900 w-28 inline-block">縣市：</strong> {{ house.detail.city }}</p>
+            <p><strong class="font-medium text-slate-900 w-28 inline-block">行政區：</strong> {{ house.detail.town }}</p>
+            <p><strong class="font-medium text-slate-900 w-28 inline-block">屋齡：</strong> {{ house.detail.house_age }} 年</p>
+            <p><strong class="font-medium text-slate-900 w-28 inline-block">建坪：</strong> {{ house.detail.floor_area }} 坪</p>
+            <p><strong class="font-medium text-slate-900 w-28 inline-block">地坪：</strong> {{ house.detail.land_area }} 坪</p>
+            <p><strong class="font-medium text-slate-900 w-28 inline-block">單價：</strong> {{ house.detail.unit_price }} 萬/坪</p>
+            <p><strong class="font-medium text-slate-900 w-28 inline-block">出售日期：</strong> {{ house.detail.sold_time|date:"Y-m-d" }}</p>
           {% else %}
-            <p class="mt-2 text-sm text-slate-500">無房屋圖片</p>
+             <p class="text-slate-500">尚無詳細資料。</p>
           {% endif %}
-        
-        {% else %}
-          <p class="mt-2 text-sm text-slate-500">尚無詳細資料。</p>
-        {% endif %}
-
-      </div>
-
-      <!-- 房屋中介 -->
-      <div class="mt-6 border-t pt-4">
-        <h3 class="text-sm font-semibold text-slate-800">房屋中介</h3>
-        {% if house.agent %}
-          <p class="mt-2 text-sm text-slate-600">{{ house.agent.name }}</p>
-        {% else %}
-          <p class="mt-2 text-sm text-slate-500">無中介資料</p>
-        {% endif %}
-      </div>
-
-      <!-- 買家資訊 -->
-      <div class="mt-6 border-t pt-4">
-        <h3 class="text-sm font-semibold text-slate-800">買家</h3>
-        {% if house.buyers.all %}
-          <ul class="mt-2 space-y-1 text-sm text-slate-600">
-            {% for buyer in house.buyers.all %}
-              <li>{{ buyer.name }}</li>
-            {% endfor %}
-          </ul>
-          {% else %}
-             <p class="mt-2 text-sm text-slate-500">無買家資料</p>
+          
+          <p>
+            <strong class="font-medium text-slate-900 w-28 inline-block">房屋中介：</strong>
+            {% if house.agent %}
+              {{ house.agent.name }}
+            {% else %}
+              <span class="text-slate-500">無資料</span>
             {% endif %}
+          </p>
+          
+          <p>
+            <strong class="font-medium text-slate-900 w-28 inline-block">買家：</strong>
+            {% if house.buyers %}
+              {{ house.buyers.name }}
+            {% else %}
+              <span class="text-slate-500">無資料</span>
+            {% endif %}
+          </p>
         </div>
-      </div>         <div class="mt-8">
-        <a href="{% url 'house:house_list' %}"
-           class="inline-flex items-center rounded-lg bg-gray-500 px-4 py-2 text-sm font-medium text-white hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400">
-          &larr; 返回首頁
-        </a>
       </div>
 
-    </main>
+      {# 【!! 修正 !!】 圖片容器寬度從 md:w-1/4 調整為 md:w-1/2 #}
+      <div class="w-full md:w-1/2 md:ml-6 flex-shrink-0">
+        {% if house.detail.house_image %}
+          <img src="{{ house.detail.house_image.url }}" alt="房屋圖片" class="w-full h-auto rounded-lg shadow-md object-cover">
+        {% else %}
+          <div class="w-full h-64 flex items-center justify-center bg-slate-100 rounded-lg text-slate-500 border">
+            無房屋圖片
+          </div>
+        {% endif %}
+      </div>
 
-  <!-- Footer -->
-  <footer class="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-slate-400">
-    Powered by Django · Tailwind
-  </footer>
-
-</body>
-</html>
+    </div>
+  </div>
+{% endblock %}

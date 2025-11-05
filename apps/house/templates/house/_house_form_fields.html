@@ -1,3 +1,7 @@
+{% if form.instance.pk %}
+  <input type="hidden" name="house_id" value="{{ form.instance.pk }}">
+{% endif %}
+
 {% if form.non_field_errors %}
   <div class="md:col-span-2 rounded-md bg-red-50 p-4">
     <ul class="list-disc space-y-1 pl-5 text-sm text-red-700">
@@ -128,7 +132,7 @@
   {% endfor %}
 </div>
 
-<div class="md:col-span-2">
+<div>
   <label class="block text-sm font-medium text-slate-700">
     出售日期 <span class="text-red-500">*</span>
   </label>
@@ -138,7 +142,7 @@
   {% endfor %}
 </div>
 
-<div class="md:col-span-2">
+<div>
   <label class="block text-sm font-medium text-slate-700">圖片</label>
   {{ detail_form.house_image }}
   {% for error in detail_form.house_image.errors %}

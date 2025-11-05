@@ -1,0 +1,30 @@
+/* apps/core/static/core/css/global.css */
+/* 全域樣式 - 所有頁面共用 */
+
+/* 側邊欄連結樣式 */
+.sidebar-link {
+    transition: all 0.2s ease-in-out;
+  }
+  
+  /* 頁面滾動時平滑效果 */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* 自訂捲軸樣式 (Webkit 瀏覽器) */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 5px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }

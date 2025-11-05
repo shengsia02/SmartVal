@@ -1,0 +1,162 @@
+Folder PATH listing for volume Acer
+Volume serial number is 640B-D921
+C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
+|   __init__.py
+|   
++---core
+|   |   admin.py
+|   |   apps.py
+|   |   models.py
+|   |   tests.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---migrations
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           __init__.cpython-310.pyc
+|   |           
+|   +---static
+|   |   \---core
+|   |       +---css
+|   |       |       global.css
+|   |       |       
+|   |       \---js
+|   |               global.js
+|   |               
+|   +---templates
+|   |   \---core
+|   |           base_admin.html
+|   |           base_public.html
+|   |           dashboard_home.html
+|   |           home.html
+|   |           
+|   \---__pycache__
+|           admin.cpython-310.pyc
+|           apps.cpython-310.pyc
+|           models.cpython-310.pyc
+|           urls.cpython-310.pyc
+|           views.cpython-310.pyc
+|           __init__.cpython-310.pyc
+|           
++---house
+|   |   admin.py
+|   |   apps.py
+|   |   forms.py
+|   |   tests.py
+|   |   urls.py
+|   |   views.py
+|   |   __init__.py
+|   |   
+|   +---migrations
+|   |   |   0001_initial.py
+|   |   |   0002_alter_housedetail_sold_time.py
+|   |   |   0003_remove_housedetail_description.py
+|   |   |   0004_alter_agent_options_agent_branch_agent_company_and_more.py
+|   |   |   0005_buyer_budget_buyer_email_buyer_notes_buyer_phone_and_more.py
+|   |   |   0006_remove_buyer_birth_date_remove_buyer_budget_and_more.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           0001_initial.cpython-310.pyc
+|   |           0002_alter_housedetail_sold_time.cpython-310.pyc
+|   |           0003_remove_housedetail_description.cpython-310.pyc
+|   |           0004_alter_agent_options_agent_branch_agent_company_and_more.cpython-310.pyc
+|   |           0005_buyer_budget_buyer_email_buyer_notes_buyer_phone_and_more.cpython-310.pyc
+|   |           0006_remove_buyer_birth_date_remove_buyer_budget_and_more.cpython-310.pyc
+|   |           __init__.cpython-310.pyc
+|   |           
+|   +---models
+|   |   |   agent.py
+|   |   |   buyer.py
+|   |   |   house.py
+|   |   |   house_detail.py
+|   |   |   __init__.py
+|   |   |   
+|   |   \---__pycache__
+|   |           agent.cpython-310.pyc
+|   |           buyer.cpython-310.pyc
+|   |           house.cpython-310.pyc
+|   |           house_detail.cpython-310.pyc
+|   |           __init__.cpython-310.pyc
+|   |           
+|   +---static
+|   |   \---house
+|   |       +---css
+|   |       \---js
+|   |               list_page_handler.js
+|   |               
+|   +---templates
+|   |   \---house
+|   |           agent_detail.html
+|   |           agent_list.html
+|   |           buyer_detail.html
+|   |           buyer_list.html
+|   |           house_detail.html
+|   |           house_form.html
+|   |           house_list.html
+|   |           _agent_form_fields.html
+|   |           _agent_table_row.html
+|   |           _buyer_form_fields.html
+|   |           _buyer_table_row.html
+|   |           _house_form_fields.html
+|   |           _house_table_row.html
+|   |           
+|   \---__pycache__
+|           admin.cpython-310.pyc
+|           apps.cpython-310.pyc
+|           forms.cpython-310.pyc
+|           models.cpython-310.pyc
+|           urls.cpython-310.pyc
+|           views.cpython-310.pyc
+|           __init__.cpython-310.pyc
+|           
+\---__pycache__
+        __init__.cpython-310.pyc
+        
+Folder PATH listing for volume Acer
+Volume serial number is 640B-D921
+C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\CONFIG
+|   asgi.py
+|   urls.py
+|   wsgi.py
+|   __init__.py
+|   
++---settings
+|   |   base.py
+|   |   development.py
+|   |   production.py
+|   |   __init__.py
+|   |   
+|   \---__pycache__
+|           base.cpython-310.pyc
+|           development.cpython-310.pyc
+|           __init__.cpython-310.pyc
+|           
+\---__pycache__
+        urls.cpython-310.pyc
+        wsgi.cpython-310.pyc
+        __init__.cpython-310.pyc
+        
+Folder PATH listing for volume Acer
+Volume serial number is 640B-D921
+C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\EXTRA_CLASS
+    css-selector.htm
+    css.htm
+    head.jpg
+    homepage.htm
+    
+No subfolders exist 
+
+Folder PATH listing for volume Acer
+Volume serial number is 640B-D921
+C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\MEDIA
+\---house_images
+        台北101.jpg
+        台北大學.jpg
+        台北大學_8ppRAXi.jpg
+        台北大學_qJIRHsx.jpg
+        台灣大學.jpg
+        

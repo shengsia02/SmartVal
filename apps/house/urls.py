@@ -4,12 +4,25 @@ from . import views
 app_name = 'house'
 
 urlpatterns = [
-    path('', views.IntroductionView.as_view(), name='intro'),
-    path('house_list/', views.HouseListView.as_view(), name='house_list'),
-    path('house_detail/<int:house_id>/', views.HouseDetailView.as_view(), name='house_detail'),
-    path('house_list/create/', views.HouseCreateView.as_view(), name='house_create'),
-    path('house_list/<int:pk>/edit/', views.HouseUpdateView.as_view(), name='house_edit'),
+    # 房屋
+    path('list/', views.HouseListView.as_view(), name='house_list'),
+    path('detail/<int:house_id>/', views.HouseDetailView.as_view(), name='house_detail'),
+    path('create/', views.HouseCreateView.as_view(), name='house_create'),
+    path('<int:pk>/edit/', views.HouseUpdateView.as_view(), name='house_edit'),
     
-    # 【新增】用於連動選單的 AJAX URL
+    # AJAX
     path('ajax/load-towns/', views.load_towns, name='ajax_load_towns'),
+    
+    # 仲介
+    path('agents/', views.AgentListView.as_view(), name='agent_list'),
+    path('agents/create/', views.AgentCreateView.as_view(), name='agent_create'),
+    path('agents/<int:pk>/', views.AgentDetailView.as_view(), name='agent_detail'),
+    path('agents/<int:pk>/edit/', views.AgentUpdateView.as_view(), name='agent_edit'),
+    
+    # 買家
+    path('buyers/', views.BuyerListView.as_view(), name='buyer_list'),
+    path('buyers/create/', views.BuyerCreateView.as_view(), name='buyer_create'),
+    path('buyers/<int:pk>/', views.BuyerDetailView.as_view(), name='buyer_detail'),
+    # 【!! 這裡!!】 新增 Buyer 編輯的 URL
+    path('buyers/<int:pk>/edit/', views.BuyerUpdateView.as_view(), name='buyer_edit'),
 ]

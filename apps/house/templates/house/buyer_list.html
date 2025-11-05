@@ -1,25 +1,24 @@
 {% extends 'core/base_admin.html' %}
 {% load static %}
 
-{% block title %}房屋列表 - {{ total_count }} 筆資料{% endblock %}
+{% block title %}買家列表 - {{ total_count }} 筆資料{% endblock %}
 
 {% block extra_css %}
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 {% endblock %}
 
 
 {% block content %}
   <div class="flex items-center justify-between mb-6">
     <div>
-      <h1 class="text-3xl font-bold tracking-tight text-slate-900">房屋列表</h1>
+      <h1 class="text-3xl font-bold tracking-tight text-slate-900">買家列表</h1>
       <span class="text-sm text-slate-500">共 {{ total_count }} 筆資料</span>
     </div>
     <button type="button" id="open-create-modal-btn" class="px-4 py-2 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg">
-      新增房屋
+      新增買家
     </button>
   </div>
 
-  {% if houses %}
+  {% if buyers %}
     <div class="bg-white shadow-md rounded-lg overflow-x-auto">
       <table class="min-w-full divide-y divide-slate-200">
         <thead class="bg-slate-50">
@@ -28,49 +27,48 @@
               #
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              房屋地址
+              買家姓名
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              房屋類型
+              聯絡電話
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              總價
-            </th>
-            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              房屋中介
+              電子郵件
             </th>
             <th scope="col" class="relative px-6 py-3">
               <span class="sr-only">操作</span>
             </th>
           </tr>
         </thead>
-        <tbody id="house-table-body" class="bg-white divide-y divide-slate-200">
-          {% for house in houses %}
-            {% include 'house/_house_table_row.html' with house=house forloop=forloop %}
+        <tbody id="buyer-table-body" class="bg-white divide-y divide-slate-200">
+          {% for buyer in buyers %}
+            {% include 'house/_buyer_table_row.html' with buyer=buyer forloop=forloop %}
           {% endfor %}
         </tbody>
       </table>
     </div>
   {% else %}
     <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-      <p class="text-slate-500">目前沒有房屋資料。</p>
+      <p class="text-slate-500">目前沒有買家資料。</p>
     </div>
   {% endif %}
 
-  <div id="house-form-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all">
-      <div id="modal-header" class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
+  <div id="buyer-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto transform transition-all">
+      
+      <div id="modal-header" class="px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
           <h2 id="modal-title" class="text-2xl font-bold text-white flex items-center">
-              新增房屋
-          </h2>
+              </h2>
           <button id="close-modal-btn-x" class="text-white hover:text-gray-200 transition">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
               </svg>
           </button>
       </div>
-      <form id="house-form" method="post" action="" enctype="multipart/form-data">
+      
+      <form id="buyer-form" method="post" action="" enctype="multipart/form-data">
           {% csrf_token %}
+          
           <div id="modal-form-errors" class="hidden rounded-md bg-red-50 p-4 m-6">
             <h3 class="text-sm font-medium text-red-800">儲存失敗</h3>
             <div class="mt-2 text-sm text-red-700">
@@ -79,9 +77,8 @@
             </div>
           </div>
           
-          {# 【!! 修改 !!】 把 space-y-5 改成 grid #}
           <div id="modal-form-content" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-            {% include 'house/_house_form_fields.html' with form=create_form detail_form=create_detail_form %}
+            {% include 'house/_buyer_form_fields.html' with form=create_form %}
           </div>
           
           <div class="flex items-center gap-x-4 bg-gray-50 px-6 py-4 rounded-b-2xl sticky bottom-0 z-10 border-t">
@@ -101,52 +98,47 @@
 
 
 {% block extra_js %}
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-  <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
-
   {% load static %}
   <script src="{% static 'house/js/list_page_handler.js' %}"></script>
   
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       
-      const createFormHtml = document.getElementById('modal-form-content').innerHTML;
+      const initialFormHtml = document.getElementById('modal-form-content').innerHTML;
 
       initializeListPageHandler({
-        // 主要 ID
-        modalId: 'house-form-modal',
-        formId: 'house-form',
-        tableBodyId: 'house-table-body',
-        
-        // Modal 標題/標題列
+        // --- 1. DOM 元素 ---
+        modalId: 'buyer-modal',
+        tableBodyId: 'buyer-table-body',
+        formId: 'buyer-form',
+        formContentContainer: document.getElementById('modal-form-content'),
         modalTitle: document.getElementById('modal-title'),
         modalHeader: document.getElementById('modal-header'),
         
-        // 表單內容容器
-        formContentContainer: document.getElementById('modal-form-content'),
-        
-        // "新增" 模式的設定
+        // --- 2. "新增" 模式設定 (Create) ---
         createConfig: {
-            modalTitle: '新增房屋',
-            formAction: "{% url 'house:house_create' %}",
-            formHtml: createFormHtml, 
-            headerClass: 'from-blue-600 to-indigo-600'
+          modalTitle: '新增買家',
+          formAction: "{% url 'house:buyer_create' %}",
+          // 【!! 修改 !!】 新增改成橙黃色
+          headerClass: 'bg-gradient-to-r from-yellow-500 to-orange-600', 
+          formHtml: initialFormHtml 
         },
         
-        // "編輯" 模式的設定
+        // --- 3. "編輯" 模式設定 (Update) ---
         editConfig: {
-            modalTitle: '編輯房屋',
-            headerClass: 'from-blue-600 to-indigo-600'
+          modalTitle: '編輯買家資料',
+          headerClass: 'bg-gradient-to-r from-yellow-500 to-orange-600' // 橙黃色
         },
         
-        // "新增" 和 "編輯" 都需要的特殊功能
+        // --- 4. JS 特殊功能設定 ---
         commonFeatures: {
-            townsUrl: "{% url 'house:ajax_load_towns' %}",
-            hasFlatpickr: true
+          townsUrl: null, 
+          hasFlatpickr: false 
         },
-
-        pk_form_field: 'house_id', 
-        row_id_prefix: 'house-row-'
+        
+        // --- 5. PK 設定 (保持不變) ---
+        pk_form_field: 'buyer_id',  
+        row_id_prefix: 'buyer-row-' 
       });
     });
   </script>

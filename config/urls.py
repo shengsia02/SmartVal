@@ -22,6 +22,9 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('house/', include('apps.house.urls')),
+    
+    # 【新增】將根目錄 ' ' 指向 core app
+    path('', include('apps.core.urls')),
 ]
 
 # 這行用來處理媒體文件（圖片）路徑
