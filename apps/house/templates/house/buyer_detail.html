@@ -1,0 +1,25 @@
+{% extends 'core/base_admin.html' %}
+
+{% block title %}買家資訊 - {{ buyer.name }}{% endblock %}
+
+{% block content %}
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-3xl font-bold tracking-tight text-slate-900">
+      買家資訊
+    </h1>
+    <a href="{% url 'house:buyer_list' %}"
+       class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+      &larr; 返回列表
+    </a>
+  </div>
+
+  <div class="bg-white shadow-md rounded-lg p-6">
+    <div class="space-y-4 text-lg text-slate-700">
+      
+      <p><strong class="font-medium text-slate-900 w-28 inline-block">姓名：</strong> {{ buyer.name }}</p>
+      <p><strong class="font-medium text-slate-900 w-28 inline-block">聯絡電話：</strong> {{ buyer.phone|default:"--" }}</p>
+      <p><strong class="font-medium text-slate-900 w-28 inline-block">電子郵件：</strong> {{ buyer.email|default:"--" }}</p>
+
+    </div>
+  </div>
+{% endblock %}

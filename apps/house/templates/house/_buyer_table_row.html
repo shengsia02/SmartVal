@@ -1,0 +1,38 @@
+<tr id="buyer-row-{{ buyer.id }}">
+  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500 row-index">
+    {{ page_obj.start_index|add:forloop.counter0 }}
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <a href="{% url 'house:buyer_detail' buyer.id %}" class="block text-sm font-medium text-blue-600 hover:text-blue-800 truncate" title="{{ buyer.name }}">
+      {{ buyer.name }}
+    </a>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <p class="text-sm text-slate-600">{{ buyer.phone|default:"--" }}</p>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap">
+    <p class="text-sm text-slate-600">{{ buyer.email|default:"--" }}</p>
+  </td>
+  <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+    <div class="flex items-center justify-end gap-2">
+      
+      <button type="button" 
+              class="open-edit-modal-btn inline-flex items-center rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400"
+              data-url="{% url 'house:buyer_edit' buyer.id %}">
+        編輯
+      </button>
+
+      <form method="post" action="{% url 'house:buyer_list' %}"
+            class="delete-form"
+            onsubmit="return confirm('確定要刪除這筆買家資料嗎？');">
+        {% csrf_token %}
+        <input type="hidden" name="buyer_id" value="{{ buyer.id }}">
+        <button type="submit"
+          class="inline-flex items-center rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700">
+          刪除
+        </button>
+      </form>
+  
+      </div>
+    </td>
+  </tr>

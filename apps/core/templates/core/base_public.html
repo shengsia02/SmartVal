@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}SmartVal 智能房屋估價系統{% endblock %}</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    {% load static %}
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <main class="min-h-screen">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

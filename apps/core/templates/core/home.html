@@ -1,26 +1,10 @@
-<!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>{{ page_title }}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-slate-50 text-slate-800">
+{% extends 'core/base_public.html' %}
 
-  <header class="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur">
-    <div class="mx-auto max-w-6xl px-4 py-5 flex items-center justify-between">
-      <h1 class="text-2xl font-semibold tracking-tight">{{ page_title }}</h1>
-      
-      <a href="{% url 'house:house_list' %}"
-         class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-400">
-        後台管理 (房屋列表)
-      </a>
-    </div>
-  </header>
+{% block title %}首頁 - AI 房屋估價系統{% endblock %}
 
-  <main class="mx-auto max-w-6xl px-4 py-8">
-    <div class="bg-white shadow-lg rounded-2xl p-8 max-w-2xl mx-auto">
+{% block content %}
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white shadow-lg rounded-2xl p-8 max-w-2xl w-full">
       
       <h2 class="text-3xl font-bold text-slate-900 text-center">AI 房屋估價系統</h2>
       <p class="mt-4 text-lg text-slate-600 text-center">
@@ -58,12 +42,13 @@
           </button>
         </div>
       </form>
+
+      <div class="mt-8 text-center border-t pt-4">
+        <a href="{% url 'core:dashboard_home' %}" class="text-sm text-blue-600 hover:underline">
+          &rarr; 進入後台管理
+        </a>
+      </div>
+
     </div>
-  </main>
-
-  <footer class="mx-auto max-w-6xl px-4 py-8 text-center text-xs text-slate-400">
-    Powered by Django · Tailwind
-  </footer>
-
-</body>
-</html>
+  </div>
+{% endblock %}
