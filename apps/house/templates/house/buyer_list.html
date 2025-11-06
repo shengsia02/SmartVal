@@ -18,6 +18,32 @@
     </button>
   </div>
 
+  <!-- 【!! 重大新增 !!】 搜尋表單 (已加大樣式) -->
+  <form method="GET" action="{% url 'house:buyer_list' %}" class="mb-6 p-6 bg-white rounded-lg shadow-sm">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      <!-- 搜尋欄 (放大到 2 欄) -->
+      <div class="md:col-span-2">
+        <label for="search-q" class="block text-base font-medium text-slate-700">搜尋買家姓名</label>
+        <input type="search" name="q" id="search-q" value="{{ current_q|default:'' }}"
+               placeholder="輸入姓名關鍵字..."
+               class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base py-2.5 px-3">
+      </div>
+      
+      <!-- 按鈕 -->
+      <div class="md:col-span-1 flex items-end space-x-2">
+        <button type="submit" class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2.5 text-base font-medium text-white shadow-sm hover:bg-blue-700">
+          搜尋
+        </button>
+        <a href="{% url 'house:buyer_list' %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2.5 text-base font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          清除
+        </a>
+      </div>
+    </div>
+  </form>
+  <!-- 【!! 新增結束 !!】 -->
+
+
   {% if buyers %}
     <div class="bg-white shadow-md rounded-lg overflow-x-auto">
       <table class="min-w-full divide-y divide-slate-200">
@@ -42,52 +68,100 @@
         </thead>
         <tbody id="buyer-table-body" class="bg-white divide-y divide-slate-200">
           {% for buyer in buyers %}
-            {% include 'house/_buyer_table_row.html' with buyer=buyer forloop=forloop %}
+            {% include 'house/_buyer_table_row.html' with buyer=buyer forloop=forloop page_obj=buyers %}
           {% endfor %}
         </tbody>
       </table>
+      
+      <!-- 【!! 修改 !!】 分頁按鈕加入搜尋參數 -->
+      {% if buyers.has_other_pages %}
+        {% with q=current_q|default:'' %}
+        <nav class="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6 rounded-b-lg">
+          <div class="hidden sm:block">
+            <p class="text-sm text-slate-700">
+              顯示第
+              <span class="font-medium">{{ buyers.start_index }}</span>
+              到
+              <span class="font-medium">{{ buyers.end_index }}</span>
+              筆 (共
+              <span class="font-medium">{{ total_count }}</span>
+              筆)
+            </p>
+          </div>
+          <div class="flex flex-1 justify-between sm:justify-end items-center gap-2">
+            <!-- 上一頁 -->
+            {% if buyers.has_previous %}
+              <a href="?page={{ buyers.previous_page_number }}&amp;q={{ q }}" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                上一頁
+              </a>
+            {% else %}
+              <span class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">
+                上一頁
+              </span>
+            {% endif %}
+            
+            <!-- 頁碼輸入 -->
+            <div class="text-sm text-slate-700">
+              <input type="number" name="page" min="1" max="{{ buyers.paginator.num_pages }}" 
+                     value="{{ buyers.number }}" 
+                     id="page-jump-input"
+                     class="w-16 rounded-md border border-slate-300 px-2 py-1.5 text-center focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                     aria-label="目前頁面">
+              / 
+              <span>{{ buyers.paginator.num_pages }}</span> 頁
+            </div>
+            
+            <!-- 下一頁 -->
+            {% if buyers.has_next %}
+              <a href="?page={{ buyers.next_page_number }}&amp;q={{ q }}" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                下一頁
+              </a>
+            {% else %}
+               <span class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">
+                下一頁
+              </span>
+            {% endif %}
+          </div>
+        </nav>
+        {% endwith %}
+      {% endif %}
+
     </div>
   {% else %}
     <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-      <p class="text-slate-500">目前沒有買家資料。</p>
+      <p class="text-slate-500">
+        {% if current_q %}
+          找不到符合條件的買家。
+        {% else %}
+          目前沒有買家資料。
+        {% endif %}
+      </p>
     </div>
   {% endif %}
 
+  <!-- ... (Modal HTML 保持不變) ... -->
   <div id="buyer-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto transform transition-all">
-      
       <div id="modal-header" class="px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
-          <h2 id="modal-title" class="text-2xl font-bold text-white flex items-center">
-              </h2>
+          <h2 id="modal-title" class="text-2xl font-bold text-white flex items-center"></h2>
           <button id="close-modal-btn-x" class="text-white hover:text-gray-200 transition">
-              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
           </button>
       </div>
-      
       <form id="buyer-form" method="post" action="" enctype="multipart/form-data">
           {% csrf_token %}
-          
           <div id="modal-form-errors" class="hidden rounded-md bg-red-50 p-4 m-6">
             <h3 class="text-sm font-medium text-red-800">儲存失敗</h3>
-            <div class="mt-2 text-sm text-red-700">
-              <ul id="modal-error-list" class="list-disc space-y-1 pl-5">
-              </ul>
-            </div>
+            <div class="mt-2 text-sm text-red-700"><ul id="modal-error-list" class="list-disc space-y-1 pl-5"></ul></div>
           </div>
-          
           <div id="modal-form-content" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
             {% include 'house/_buyer_form_fields.html' with form=create_form %}
           </div>
-          
           <div class="flex items-center gap-x-4 bg-gray-50 px-6 py-4 rounded-b-2xl sticky bottom-0 z-10 border-t">
-            <button type="submit" id="modal-submit-btn"
-              class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <button type="submit" id="modal-submit-btn" class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
               儲存
             </button>
-            <button type="button" id="close-modal-btn-cancel"
-              class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400">
+            <button type="button" id="close-modal-btn-cancel" class="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400">
               取消
             </button>
           </div>
@@ -107,39 +181,50 @@
       const initialFormHtml = document.getElementById('modal-form-content').innerHTML;
 
       initializeListPageHandler({
-        // --- 1. DOM 元素 ---
+        // ... (其他設定保持不變) ...
         modalId: 'buyer-modal',
         tableBodyId: 'buyer-table-body',
         formId: 'buyer-form',
         formContentContainer: document.getElementById('modal-form-content'),
         modalTitle: document.getElementById('modal-title'),
         modalHeader: document.getElementById('modal-header'),
-        
-        // --- 2. "新增" 模式設定 (Create) ---
         createConfig: {
           modalTitle: '新增買家',
           formAction: "{% url 'house:buyer_create' %}",
-          // 【!! 修改 !!】 新增改成橙黃色
           headerClass: 'bg-gradient-to-r from-yellow-500 to-orange-600', 
           formHtml: initialFormHtml 
         },
-        
-        // --- 3. "編輯" 模式設定 (Update) ---
         editConfig: {
           modalTitle: '編輯買家資料',
-          headerClass: 'bg-gradient-to-r from-yellow-500 to-orange-600' // 橙黃色
+          headerClass: 'bg-gradient-to-r from-yellow-500 to-orange-600'
         },
-        
-        // --- 4. JS 特殊功能設定 ---
         commonFeatures: {
           townsUrl: null, 
           hasFlatpickr: false 
         },
-        
-        // --- 5. PK 設定 (保持不變) ---
         pk_form_field: 'buyer_id',  
         row_id_prefix: 'buyer-row-' 
       });
+
+      // 【!! 修改 !!】 JS 跳轉邏輯保持不變
+      const pageInput = document.getElementById('page-jump-input');
+      if (pageInput) {
+        pageInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            const pageNum = parseInt(this.value, 10);
+            const maxPage = parseInt(this.max, 10);
+            if (pageNum >= 1 && pageNum <= maxPage) {
+              const url = new URL(window.location.href);
+              url.searchParams.set('page', pageNum);
+              window.location.href = url.href;
+            } else {
+              alert(`請輸入 1 到 ${maxPage} 之間的有效頁碼。`);
+              this.value = "{{ buyers.number }}"; 
+            }
+          }
+        });
+      }
+
     });
   </script>
 {% endblock %}

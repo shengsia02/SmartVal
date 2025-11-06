@@ -18,6 +18,46 @@
       新增房屋
     </button>
   </div>
+  
+  <!-- 【!! 修改 !!】 加大 padding (p-6) 和字體 (text-base) -->
+  <form method="GET" action="{% url 'house:house_list' %}" class="mb-6 p-6 bg-white rounded-lg shadow-sm">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      
+      <!-- 搜尋欄 -->
+      <div class="md:col-span-1">
+        <label for="search-q" class="block text-base font-medium text-slate-700">搜尋地址</label>
+        <input type="search" name="q" id="search-q" value="{{ current_q|default:'' }}"
+               placeholder="輸入地址關鍵字..."
+               class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base py-2.5 px-3">
+      </div>
+      
+      <!-- 篩選器 -->
+      <div class="md:col-span-1">
+        <label for="filter-house-type" class="block text-base font-medium text-slate-700">篩選房屋類型</label>
+        <select name="house_type" id="filter-house-type"
+                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base py-2.5 px-3">
+          <option value="">所有類型</option>
+          {% for value, display in house_type_choices %}
+            <option value="{{ value }}" {% if current_house_type == value %}selected{% endif %}>
+              {{ display }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      
+      <!-- 按鈕 -->
+      <div class="md:col-span-1 flex items-end space-x-2">
+        <button type="submit" class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2.5 text-base font-medium text-white shadow-sm hover:bg-blue-700">
+          搜尋
+        </button>
+        <a href="{% url 'house:house_list' %}" class="inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2.5 text-base font-medium text-slate-700 shadow-sm hover:bg-slate-50">
+          清除
+        </a>
+      </div>
+    </div>
+  </form>
+  <!-- 【!! 修改結束 !!】 -->
+
 
   {% if houses %}
     <div class="bg-white shadow-md rounded-lg overflow-x-auto">
@@ -46,17 +86,73 @@
         </thead>
         <tbody id="house-table-body" class="bg-white divide-y divide-slate-200">
           {% for house in houses %}
-            {% include 'house/_house_table_row.html' with house=house forloop=forloop %}
+            {% include 'house/_house_table_row.html' with house=house forloop=forloop page_obj=houses %}
           {% endfor %}
         </tbody>
       </table>
+      
+      <!-- ... (分頁 HTML 保持不變) ... -->
+      {% if houses.has_other_pages %}
+        {% with q=current_q|default:'' house_type=current_house_type|default:'' %}
+        <nav class="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6 rounded-b-lg">
+          <div class="hidden sm:block">
+            <p class="text-sm text-slate-700">
+              顯示第
+              <span class="font-medium">{{ houses.start_index }}</span>
+              到
+              <span class="font-medium">{{ houses.end_index }}</span>
+              筆 (共
+              <span class="font-medium">{{ total_count }}</span>
+              筆)
+            </p>
+          </div>
+          <div class="flex flex-1 justify-between sm:justify-end items-center gap-2">
+            {% if houses.has_previous %}
+              <a href="?page={{ houses.previous_page_number }}&amp;q={{ q }}&amp;house_type={{ house_type }}" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                上一頁
+              </a>
+            {% else %}
+              <span class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">
+                上一頁
+              </span>
+            {% endif %}
+            <div class="text-sm text-slate-700">
+              <input type="number" name="page" min="1" max="{{ houses.paginator.num_pages }}" 
+                     value="{{ houses.number }}" 
+                     id="page-jump-input"
+                     class="w-16 rounded-md border border-slate-300 px-2 py-1.5 text-center focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                     aria-label="目前頁面">
+              / 
+              <span>{{ houses.paginator.num_pages }}</span> 頁
+            </div>
+            {% if houses.has_next %}
+              <a href="?page={{ houses.next_page_number }}&amp;q={{ q }}&amp;house_type={{ house_type }}" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
+                下一頁
+              </a>
+            {% else %}
+               <span class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-400 cursor-not-allowed">
+                下一頁
+              </span>
+            {% endif %}
+          </div>
+        </nav>
+        {% endwith %}
+      {% endif %}
+      
     </div>
   {% else %}
     <div class="rounded-2xl border border-dashed border-slate-300 bg-white p-12 text-center">
-      <p class="text-slate-500">目前沒有房屋資料。</p>
+      <p class="text-slate-500">
+        {% if current_q or current_house_type %}
+          找不到符合條件的房屋。
+        {% else %}
+          目前沒有房屋資料。
+        {% endif %}
+      </p>
     </div>
   {% endif %}
 
+  <!-- ... (Modal HTML 保持不變) ... -->
   <div id="house-form-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all">
       <div id="modal-header" class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
@@ -78,12 +174,9 @@
               </ul>
             </div>
           </div>
-          
-          {# 【!! 修改 !!】 把 space-y-5 改成 grid #}
           <div id="modal-form-content" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
             {% include 'house/_house_form_fields.html' with form=create_form detail_form=create_detail_form %}
           </div>
-          
           <div class="flex items-center gap-x-4 bg-gray-50 px-6 py-4 rounded-b-2xl sticky bottom-0 z-10 border-t">
             <button type="submit" id="modal-submit-btn"
               class="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400">
@@ -113,41 +206,49 @@
       const createFormHtml = document.getElementById('modal-form-content').innerHTML;
 
       initializeListPageHandler({
-        // 主要 ID
+        // ... (其他設定保持不變) ...
         modalId: 'house-form-modal',
         formId: 'house-form',
         tableBodyId: 'house-table-body',
-        
-        // Modal 標題/標題列
         modalTitle: document.getElementById('modal-title'),
         modalHeader: document.getElementById('modal-header'),
-        
-        // 表單內容容器
         formContentContainer: document.getElementById('modal-form-content'),
-        
-        // "新增" 模式的設定
         createConfig: {
             modalTitle: '新增房屋',
             formAction: "{% url 'house:house_create' %}",
             formHtml: createFormHtml, 
             headerClass: 'from-blue-600 to-indigo-600'
         },
-        
-        // "編輯" 模式的設定
         editConfig: {
             modalTitle: '編輯房屋',
             headerClass: 'from-blue-600 to-indigo-600'
         },
-        
-        // "新增" 和 "編輯" 都需要的特殊功能
         commonFeatures: {
             townsUrl: "{% url 'house:ajax_load_towns' %}",
             hasFlatpickr: true
         },
-
         pk_form_field: 'house_id', 
         row_id_prefix: 'house-row-'
       });
+
+      // ... (頁碼跳轉 JS 保持不變) ...
+      const pageInput = document.getElementById('page-jump-input');
+      if (pageInput) {
+        pageInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            const pageNum = parseInt(this.value, 10);
+            const maxPage = parseInt(this.max, 10);
+            if (pageNum >= 1 && pageNum <= maxPage) {
+              const url = new URL(window.location.href);
+              url.searchParams.set('page', pageNum);
+              window.location.href = url.href;
+            } else {
+              alert(`請輸入 1 到 ${maxPage} 之間的有效頁碼。`);
+              this.value = "{{ houses.number }}"; 
+            }
+          }
+        });
+      }
     });
   </script>
 {% endblock %}

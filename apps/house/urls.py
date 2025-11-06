@@ -23,6 +23,8 @@ urlpatterns = [
     path('buyers/', views.BuyerListView.as_view(), name='buyer_list'),
     path('buyers/create/', views.BuyerCreateView.as_view(), name='buyer_create'),
     path('buyers/<int:pk>/', views.BuyerDetailView.as_view(), name='buyer_detail'),
-    # 【!! 這裡!!】 新增 Buyer 編輯的 URL
     path('buyers/<int:pk>/edit/', views.BuyerUpdateView.as_view(), name='buyer_edit'),
+
+    # 【!! 重大新增 !!】 Excel 批次匯入
+    path('upload-excel/', views.ExcelUploadView.as_view(), name='upload_excel'),
 ]

@@ -49,7 +49,7 @@ city_districts = {
         '中西區', '東區', '南區', '北區', '安平區', '安南區', '永康區', '歸仁區', '新化區', '左鎮區', '玉井區', '楠西區', '南化區', '仁德區', '關廟區', '龍崎區', '官田區', '麻豆區', '佳里區', '西港區', '七股區', '將軍區', '學甲區', '北門區', '新營區', '後壁區', '白河區', '東山區', '六甲區', '下營區', '柳營區', '鹽水區', '善化區', '大內區', '山上區', '新市區', '安定區'
     ],
     '高雄市': [
-        '楠梓區', '左營區', '鼓山區', '三民區', '鹽埕區', '前金區', '新興區', '苓雅區', '前鎮區', '小港區', '旗津區', '鳳山區', '大寮區', '鳥松區', '林園區', '仁武區', '大樹區', '大社區', '岡山區', '路竹區', '橋頭區', '梓官區', '彌陀區', '永安區', '燕巢區', '田寮區', '阿蓮區', '茄F81A區', '湖內區', '旗山區', '美濃區', '內門區', '杉林區', '甲仙區', '六龜區', '茂林區', '桃源區', '那瑪夏區'
+        '楠梓區', '左營區', '鼓山區', '三民區', '鹽埕區', '前金區', '新興區', '苓雅區', '前鎮區', '小港區', '旗津區', '鳳山區', '大寮區', '鳥松區', '林園區', '仁武區', '大樹區', '大社區', '岡山區', '路竹區', '橋頭區', '梓官區', '彌陀區', '永安區', '燕巢區', '田寮區', '阿蓮區', '茄萣區', '湖內區', '旗山區', '美濃區', '內門區', '杉林區', '甲仙區', '六龜區', '茂林區', '桃源區', '那瑪夏區'
     ],
     '屏東縣': [
         '屏東市', '潮州鎮', '東港鎮', '恆春鎮', '萬丹鄉', '長治鄉', '麟洛鄉', '九如鄉', '里港鄉', '鹽埔鄉', '高樹鄉', '萬巒鄉', '內埔鄉', '竹田鄉', '新埤鄉', '枋寮鄉', '新園鄉', '崁頂鄉', '林邊鄉', '南州鄉', '佳冬鄉', '琉球鄉', '車城鄉', '滿州鄉', '枋山鄉', '霧台鄉', '瑪家鄉', '泰武鄉', '來義鄉', '春日鄉', '獅子鄉', '牡丹鄉', '三地門鄉'
@@ -82,9 +82,7 @@ HOUSE_TYPE_CHOICES = [
     ("透天", "透天"),
 ]
 
-# 【修改】這是 "房屋" 用的
 HOUSE_CITY_CHOICES = [("", "請選擇房屋所在縣市")] + [(city, city) for city in city_districts.keys()]
-# 【新增】這是 "仲介" 用的
 AGENT_CITY_CHOICES = [("", "請選擇分行所在縣市")] + [(city, city) for city in city_districts.keys()]
 
 
@@ -93,12 +91,12 @@ default_attrs = {'class': 'mt-2 p-2 w-full border rounded-lg shadow-sm focus:rin
 select_attrs = {
     'class': 'mt-2 p-2 w-full border rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-500 valid:text-black'
 }
-# 【!! 修改 !!】 唯讀樣式 (不再包含 'readonly': True)
+# 【!! 修改 !!】 移除 'disabled': True，因為我們改用 Django 的 field.disabled
 disabled_style_attrs = {
     'class': 'mt-2 p-2 w-full border rounded-lg shadow-sm bg-slate-100 text-slate-500 cursor-not-allowed'
 }
 
-# --- 4. HouseForm (修改) ---
+# --- 4. HouseForm (修改 __init__) ---
 class HouseForm(forms.ModelForm):
     house_type = forms.ChoiceField(
         choices=HOUSE_TYPE_CHOICES,
@@ -146,16 +144,17 @@ class HouseForm(forms.ModelForm):
         if not self.instance.pk or not self.instance.buyers:
             self.fields['buyers'].empty_label = "請選擇買家"
             
-        # 【!! 關鍵修改 !!】
         if is_update:
             fields_to_disable = ['address', 'house_type', 'agent', 'buyers']
             for name in fields_to_disable:
                 if name in self.fields:
+                    # 【!! 關鍵修正 !!】
+                    # 使用 Django 的欄位屬性 .disabled，而不是修改 widget.attrs
                     self.fields[name].disabled = True
                     self.fields[name].widget.attrs.update(disabled_style_attrs)
 
 
-# --- 5. HouseDetailForm (修改) ---
+# --- 5. HouseDetailForm (修改 __init__) ---
 class HouseDetailForm(forms.ModelForm):
     city = forms.ChoiceField(
         choices=HOUSE_CITY_CHOICES,
@@ -169,7 +168,6 @@ class HouseDetailForm(forms.ModelForm):
         error_messages={'required': '請選擇房屋所在行政區'},
         widget=forms.Select(attrs=select_attrs)
     )
-    # ... (其他數字欄位保持不變) ...
     house_age = forms.DecimalField(
         required=True, max_digits=10, decimal_places=2,
         error_messages={'required': '請輸入屋齡', 'invalid': '屋齡必須是數字'},
@@ -234,15 +232,16 @@ class HouseDetailForm(forms.ModelForm):
         else:
             self.fields['town'].choices = [("", "請先選擇房屋所在縣市")]
             
-        # 【!! 關鍵修改 !!】
         if is_update:
             fields_to_disable = ['city', 'town', 'sold_time']
             for field_name in fields_to_disable:
                 if field_name in self.fields:
+                    # 【!! 關鍵修正 !!】
+                    # 使用 Django 的欄位屬性 .disabled，而不是修改 widget.attrs
                     self.fields[field_name].disabled = True
                     self.fields[field_name].widget.attrs.update(disabled_style_attrs)
 
-# --- AgentForm (保持不變) ---
+# --- 6. AgentForm (遵循選項 B) ---
 class AgentForm(forms.ModelForm):
     city = forms.ChoiceField(
         choices=AGENT_CITY_CHOICES,
@@ -256,19 +255,42 @@ class AgentForm(forms.ModelForm):
         error_messages={'required': '請選擇分行所在行政區'},
         widget=forms.Select(attrs=select_attrs)
     )
+    phone = forms.CharField(
+        required=True, 
+        error_messages={'required': '請輸入聯絡電話'}, 
+        widget=forms.TextInput(attrs={**default_attrs, 'placeholder': '例如：0912-345-678'})
+    )
+    email = forms.EmailField(
+        required=True, 
+        error_messages={'required': '請輸入電子郵件'}, 
+        widget=forms.EmailInput(attrs={**default_attrs, 'placeholder': '例如：agent@example.com'})
+    )
+    company = forms.CharField(
+        required=True, 
+        error_messages={'required': '請輸入隸屬品牌'}, 
+        widget=forms.TextInput(attrs={**default_attrs, 'placeholder': '例如：信義房屋'})
+    )
+    branch = forms.CharField(
+        required=True, 
+        error_messages={'required': '請輸入分行名稱'}, 
+        widget=forms.TextInput(attrs={**default_attrs, 'placeholder': '例如：大安店'})
+    )
+
     class Meta:
         model = Agent
         fields = ['name', 'phone', 'email', 'company', 'branch', 'city', 'town']
         widgets = {
-            'name': forms.TextInput(attrs={**default_attrs, 'placeholder': '請輸入仲介姓名'}),
-            'phone': forms.TextInput(attrs={**default_attrs, 'placeholder': '例如：0912-345-678'}),
-            'email': forms.EmailInput(attrs={**default_attrs, 'placeholder': '例如：agent@example.com'}),
-            'company': forms.TextInput(attrs={**default_attrs, 'placeholder': '例如：信義房屋'}),
-            'branch': forms.TextInput(attrs={**default_attrs, 'placeholder': '例如：大安店'}),
+            'name': forms.TextInput(attrs={
+                **default_attrs, 
+                'placeholder': '請輸入仲介姓名'
+            }),
         }
         error_messages = {
-            'name': {'required': '請輸入仲介姓名',},
+            'name': {
+                'required': '請輸入仲介姓名',
+            },
         }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         selected_city = None
@@ -285,16 +307,30 @@ class AgentForm(forms.ModelForm):
         else:
             self.fields['town'].choices = [("", "請先選擇分行所在縣市")]
 
-# --- BuyerForm (保持不變) ---
+# --- 7. BuyerForm (遵循選項 B) ---
 class BuyerForm(forms.ModelForm):
+    phone = forms.CharField(
+        required=True, 
+        error_messages={'required': '請輸入聯絡電話'}, 
+        widget=forms.TextInput(attrs={**default_attrs, 'placeholder': '例如：0988-123-456'})
+    )
+    email = forms.EmailField(
+        required=True, 
+        error_messages={'required': '請輸入電子郵件'}, 
+        widget=forms.EmailInput(attrs={**default_attrs, 'placeholder': '例如：buyer@example.com'})
+    )
+
     class Meta:
         model = Buyer
         fields = ['name', 'phone', 'email']
         widgets = {
-            'name': forms.TextInput(attrs={**default_attrs, 'placeholder': '請輸入買家姓名'}),
-            'phone': forms.TextInput(attrs={**default_attrs, 'placeholder': '例如：0988-123-456'}),
-            'email': forms.EmailInput(attrs={**default_attrs, 'placeholder': '例如：buyer@example.com'}),
+            'name': forms.TextInput(attrs={
+                **default_attrs, 
+                'placeholder': '請輸入買家姓名'
+            }),
         }
         error_messages = {
-            'name': {'required': '請輸入買家姓名',},
+            'name': {
+                'required': '請輸入買家姓名',
+            },
         }

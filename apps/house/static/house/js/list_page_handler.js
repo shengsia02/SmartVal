@@ -87,15 +87,6 @@
           locale: 'zh_tw'
         });
       }
-
-      const birthDateInput = formElement.querySelector('#id_birth_date');
-      if (birthDateInput) {
-        flatpickr(birthDateInput, {
-          dateFormat: 'Y-m-d',
-          allowInput: true,
-          locale: 'zh_tw'
-        });
-      }
     }
   }
 
@@ -232,42 +223,14 @@
           const data = await response.json();
           
           if (data.success) {
-            // 【儲存成功】
-            if (currentMode === 'CREATE') {
-                tableBody.insertAdjacentHTML('afterbegin', data.html);
-            } else {
-                const pk_form_field = config.pk_form_field || 'id'; 
-                const row_id_prefix = config.row_id_prefix || 'row-';
-                
-                // 【!! 修正 !!】
-                // 從 instance.pk 獲取 pk (因為 disabled 欄位不在 formData 中)
-                let pk = formData.get(pk_form_field);
-                
-                if (!pk) {
-                    // 如果 formData 中沒有 (例如 house_id)，
-                    // 嘗試從表單內的隱藏欄位 DOM 獲取
-                    const hiddenInput = form.querySelector(`input[name="${pk_form_field}"]`);
-                    if (hiddenInput) {
-                        pk = hiddenInput.value;
-                    }
-                }
-                
-                if (pk) {
-                    const rowId = `#${row_id_prefix}${pk}`;
-                    const oldRow = tableBody.querySelector(rowId);
-                    if (oldRow) {
-                        oldRow.outerHTML = data.html; // 替換整列
-                    } else {
-                        console.warn(`[ListPageHandler] 找不到舊資料列: ${rowId}。 已改為插入到頂部。`);
-                        tableBody.insertAdjacentHTML('afterbegin', data.html);
-                    }
-                } else {
-                    console.error(`[ListPageHandler] 找不到 PK 欄位 '${pk_form_field}'。 已改為插入到頂部。`);
-                    tableBody.insertAdjacentHTML('afterbegin', data.html);
-                }
-            }
-            updateTableIndexes(tableBody); // 更新序號
-            hideModal();
+            // 【!! 重大修改 !!】
+            // 為了讓後端分頁重新計算，我們不再動態插入 HTML，
+            // 而是直接重新整理頁面。
+            hideModal(); // 先關閉 Modal
+            location.reload(); // 重新整理頁面
+            
+            // (舊的動態插入邏輯已被移除)
+
           } else {
             // 【驗證失敗】: 後端回傳了 "帶有錯誤的" 表單 HTML
             formContentContainer.innerHTML = data.html;
@@ -281,15 +244,14 @@
           console.error('[ListPageHandler] 表單儲存失敗:', error);
           showErrors(errorContainer, errorList, {'__all__': ['處理請求時發生未預期的錯誤。']});
       } finally {
-          // 【!! 關鍵修改 !!】
-          // 無論成功或失敗，都要恢復按鈕
+          // (這個 finally 區塊已在上次修復)
           submitBtn.disabled = false;
           submitBtn.textContent = '儲存';
       }
     });
   
     // --- 6. 綁定 AJAX "刪除" 事件 (與之前相同) ---
-    
+    // 【!! 修改 !!】 刪除成功後，也改成 location.reload()
     tableBody.addEventListener('submit', function(e) {
         if (e.target && e.target.matches('.delete-form')) {
             e.preventDefault(); 
@@ -309,8 +271,8 @@
             })
             .then(response => {
                 if (response.ok) {
-                    if (row) row.remove();
-                    updateTableIndexes(tableBody);
+                    // 【!! 修改 !!】
+                    location.reload(); // 重新整理以更新分頁
                 } else {
                     alert('刪除失敗，請重新整理頁面再試。');
                 }
@@ -322,10 +284,11 @@
         }
     });
 
+    // 刪除 updateTableIndexes 的呼叫，因為我們不再動態更新
+    // updateTableIndexes(tableBody); 
     console.log(`[ListPageHandler] ${config.tableBodyId} 已成功初始化。`);
   }
   
-  // 將工廠函式綁定到全域
   window.initializeListPageHandler = initializeListPageHandler;
 
 })();

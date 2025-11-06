@@ -2,6 +2,31 @@
 
 {% block title %}後台管理首頁 - SmartVal{% endblock %}
 
+{% block extra_css %}
+{# 【!! 新增 !!】 Dropzone 的 CSS 樣式 #}
+<style>
+  .dropzone {
+    border: 2px dashed #d1d5db;
+    border-radius: 0.5rem;
+    background-color: #f9fafb;
+    transition: all 0.3s ease;
+  }
+  .dropzone.drag-over {
+    border-color: #2563eb;
+    background-color: #dbeafe;
+  }
+  .dropzone-icon svg {
+    width: 60px;
+    height: 60px;
+    color: #9ca3af;
+  }
+  .dropzone.drag-over .dropzone-icon svg {
+    color: #2563eb;
+  }
+</style>
+{% endblock %}
+
+
 {% block content %}
   <div class="mb-8">
       <h1 class="text-3xl font-bold text-slate-900">
@@ -9,8 +34,8 @@
       </h1>
   </div>
 
+  {# --- 卡片區 (保持不變) --- #}
   <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
       <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden flex flex-col">
           <div class="p-6 flex-grow"> <div class="flex items-center space-x-4 mb-4">
                   <div class="p-3 rounded-full bg-blue-100 text-blue-600">
@@ -79,6 +104,247 @@
               </a>
           </div>
       </div>
-      
   </div>
+
+  {# --- 【!! 重大新增 !!】 Excel 批次匯入區 --- #}
+  <div class="mt-12 bg-white rounded-xl shadow-md">
+      <div class="p-6 border-b border-gray-200">
+        <h2 class="text-2xl font-bold text-slate-900">批次匯入資料</h2>
+        <p class="text-slate-600 mt-2">
+            透過 Excel 檔案一次匯入所有的「房屋」、「仲介」和「買家」資料。
+        </p>
+        <p class="text-sm text-slate-500 mt-1">
+            (請確保 Excel 包含 "房屋", "仲介", "買家" 三個工作表，且欄位名稱正確)
+        </p>
+      </div>
+
+      <div class="p-6">
+        <form id="upload-excel-form" action="{% url 'house:upload_excel' %}" method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          <div id="dropzone" class="dropzone flex flex-col items-center justify-center p-12 text-center cursor-pointer">
+              <div class="dropzone-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0l-3.75 3.75M12 9.75l3.75 3.75M3.75 12h16.5c.621 0 1.125-.504 1.125-1.125V9.75c0-.621-.504-1.125-1.125-1.125H3.75c-.621 0-1.125.504-1.125 1.125v1.125c0 .621.504 1.125 1.125 1.125z" />
+                  </svg>
+              </div>
+              <p id="dropzone-text" class="mt-4 text-lg font-medium text-slate-700">
+                將 Excel 檔案 (.xlsx) 拖放到這裡，或 <span class="text-blue-600 font-semibold">點擊此處上傳</span>
+              </p>
+              <p id="dropzone-file-name" class="text-lg font-medium text-green-700 mt-4 hidden"></p>
+              <input type="file" id="file-input" name="file" class="hidden" accept=".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel">
+          </div>
+        </form>
+
+        <div class="mt-6 flex items-center gap-4">
+            <button type="button" id="upload-btn" class="px-5 py-2.5 text-base font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed">
+                開始匯入
+            </button>
+            <button type="button" id="clear-btn" class="px-5 py-2.5 text-base font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg hidden">
+                清除檔案
+            </button>
+        </div>
+        
+        <div id="upload-status" class="mt-4">
+            <div id="status-success" class="hidden rounded-md bg-green-50 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1.293-4.293a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L10 12.414l-2.293 2.293a1 1 0 01-1.414-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-green-800">匯入成功</h3>
+                        <p class="mt-2 text-sm text-green-700" id="success-message"></p>
+                    </div>
+                </div>
+            </div>
+            <div id="status-error" class="hidden rounded-md bg-red-50 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-red-800">匯入失敗</h3>
+                        <p class="mt-2 text-sm text-red-700" id="error-message"></p>
+                    </div>
+                </div>
+            </div>
+            <div id="status-loading" class="hidden flex items-center gap-2 text-slate-600">
+                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>資料匯入中，請稍候...</span>
+            </div>
+        </div>
+      </div>
+  </div>
+{% endblock %}
+
+
+{% block extra_js %}
+{# 【!! 新增 !!】 Dropzone 的 JS 邏輯 #}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('file-input');
+  const uploadForm = document.getElementById('upload-excel-form');
+  const uploadBtn = document.getElementById('upload-btn');
+  const clearBtn = document.getElementById('clear-btn');
+  const textElement = document.getElementById('dropzone-text');
+  const fileNameElement = document.getElementById('dropzone-file-name');
+  
+  const statusLoading = document.getElementById('status-loading');
+  const statusSuccess = document.getElementById('status-success');
+  const statusError = document.getElementById('status-error');
+  const successMessage = document.getElementById('success-message');
+  const errorMessage = document.getElementById('error-message');
+
+  let uploadedFile = null;
+
+  // --- 1. 狀態控制 ---
+  function showStatus(type, message) {
+    statusLoading.classList.add('hidden');
+    statusSuccess.classList.add('hidden');
+    statusError.classList.add('hidden');
+
+    if (type === 'loading') {
+      statusLoading.classList.remove('hidden');
+    } else if (type === 'success') {
+      successMessage.textContent = message;
+      statusSuccess.classList.remove('hidden');
+    } else if (type === 'error') {
+      errorMessage.textContent = message;
+      statusError.classList.remove('hidden');
+    }
+  }
+  
+  function setFile(file) {
+    if (file && (file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || file.name.endsWith('.xlsx'))) {
+      uploadedFile = file;
+      textElement.classList.add('hidden');
+      fileNameElement.textContent = `已選擇檔案： ${file.name}`;
+      fileNameElement.classList.remove('hidden');
+      clearBtn.classList.remove('hidden');
+      uploadBtn.disabled = false;
+      dropzone.classList.add('border-green-500');
+      showStatus(null); // 清除舊訊息
+    } else {
+      showStatus('error', '檔案格式錯誤，請上傳 .xlsx 檔案。');
+      clearFile();
+    }
+  }
+
+  function clearFile() {
+    uploadedFile = null;
+    fileInput.value = null; // 清空 input
+    textElement.classList.remove('hidden');
+    fileNameElement.classList.add('hidden');
+    fileNameElement.textContent = '';
+    clearBtn.classList.add('hidden');
+    uploadBtn.disabled = true;
+    dropzone.classList.remove('border-green-500');
+  }
+  
+  clearFile(); // 初始化按鈕狀態
+
+  // --- 2. 事件綁定 ---
+  
+  // 點擊區域 = 點擊 input
+  dropzone.addEventListener('click', () => {
+    fileInput.click();
+  });
+  
+  // 手動選擇檔案
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      setFile(e.target.files[0]);
+    }
+  });
+  
+  // 清除按鈕
+  clearBtn.addEventListener('click', clearFile);
+
+  // --- 3. 拖放事件 ---
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, preventDefaults, false);
+  });
+
+  function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropzone.addEventListener(eventName, () => {
+      dropzone.classList.add('drag-over');
+    }, false);
+  });
+
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropzone.addEventListener(eventName, () => {
+      dropzone.classList.remove('drag-over');
+    }, false);
+  });
+
+  dropzone.addEventListener('drop', (e) => {
+    if (e.dataTransfer.files.length > 0) {
+      setFile(e.dataTransfer.files[0]);
+    }
+  }, false);
+
+  // --- 4. AJAX 上傳 ---
+  uploadBtn.addEventListener('click', () => {
+    if (!uploadedFile) return;
+
+    showStatus('loading');
+    uploadBtn.disabled = true;
+    clearBtn.disabled = true;
+
+    const formData = new FormData();
+    formData.append('file', uploadedFile);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    fetch(uploadForm.action, {
+      method: 'POST',
+      body: formData,
+      headers: {
+          'X-Requested-With': 'XMLHttpRequest', // 讓 Django 知道這是 AJAX
+      }
+    })
+    .then(response => {
+        if (!response.ok) {
+            // 如果伺服器回傳 400, 500 等錯誤，先解析 JSON
+            return response.json().then(data => {
+                throw new Error(data.error || '伺服器發生未知錯誤。');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+      if (data.success) {
+        showStatus('success', data.message);
+        clearFile(); // 成功後清除
+      } else {
+        // 業務邏輯上的失敗 (例如驗證錯誤)
+        showStatus('error', data.error);
+      }
+    })
+    .catch(error => {
+      showStatus('error', error.message);
+    })
+    .finally(() => {
+      // 無論如何，都恢復按鈕狀態
+      uploadBtn.disabled = (uploadedFile === null); // 如果檔案已清除，保持 disabled
+      clearBtn.disabled = false;
+      if (uploadedFile === null) {
+          clearBtn.classList.add('hidden'); // 如果檔案已清除，隱藏清除按鈕
+      }
+    });
+  });
+
+});
+</script>
 {% endblock %}

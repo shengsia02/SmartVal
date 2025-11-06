@@ -6,22 +6,55 @@ from django.views.generic import View
 from django.template.loader import render_to_string 
 from .models import House, HouseDetail, Agent, Buyer
 from .forms import HouseForm, HouseDetailForm, AgentForm, BuyerForm
-from .forms import city_districts
+# 【!! 修改 !!】 匯入 Choice 選項
+from .forms import city_districts, HOUSE_TYPE_CHOICES, AGENT_CITY_CHOICES
+
+import pandas as pd
+from django.db import transaction
+from django.core.exceptions import ValidationError
+from django.contrib.auth.decorators import login_required
+from django.utils.decorators import method_decorator
+from django.core.paginator import Paginator
+
+# 【!! 新增 !!】 匯入 Q 物件，用於 "icontains" (包含) 查詢
+from django.db.models import Q
 
 # ==========================================
 # 房屋 (House) 相關 Views
 # ==========================================
-# ... (HouseListView, HouseDetailView, HouseCreateView, HouseUpdateView 保持不變) ...
 class HouseListView(View):
     def get(self, request):
-        houses = House.objects.all().order_by('-created_at') 
+        # 【!! 修改 !!】 1. 獲取 GET 參數
+        query = request.GET.get('q', '')
+        house_type_filter = request.GET.get('house_type', '')
+
+        # 【!! 修改 !!】 2. 修正排序並開始過濾
+        all_houses = House.objects.all().order_by('-created_at', '-id') 
+        
+        if query:
+            # 搜尋地址 (icontains = 包含, 不分大小寫)
+            all_houses = all_houses.filter(address__icontains=query)
+        
+        if house_type_filter:
+            # 篩選房屋類型
+            all_houses = all_houses.filter(house_type=house_type_filter)
+
+        # 【!! 修改 !!】 3. Paginator 使用 "過濾後" 的結果
+        paginator = Paginator(all_houses, 10) 
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
         house_form = HouseForm()
         detail_form = HouseDetailForm()
         context = {
-            'houses': houses,
-            'total_count': houses.count(),
+            'houses': page_obj, 
+            'total_count': all_houses.count(),
             'create_form': house_form,
-            'create_detail_form': detail_form, 
+            'create_detail_form': detail_form,
+            # 【!! 新增 !!】 傳回篩選器選項和目前的值
+            'house_type_choices': HOUSE_TYPE_CHOICES[1:], # 移除 ("_,"請選擇...")
+            'current_q': query,
+            'current_house_type': house_type_filter,
         }
         return render(request, 'house/house_list.html', context) 
 
@@ -33,6 +66,7 @@ class HouseListView(View):
             return HttpResponse(status=200) 
         return redirect('house:house_list')
 
+# ... (HouseDetailView 保持不變) ...
 class HouseDetailView(View):
     def get(self, request, house_id):
         house = get_object_or_404(House, id=house_id)
@@ -42,6 +76,7 @@ class HouseDetailView(View):
         }
         return render(request, 'house/house_detail.html', context)
 
+# --- (Create / Update View 的 AJAX 成功回傳已修改為 success:True) ---
 class HouseCreateView(View):
     template_name = 'house/house_form.html' 
     success_url = reverse_lazy('house:house_list')
@@ -65,12 +100,7 @@ class HouseCreateView(View):
             detail.save()
             
             if is_ajax:
-                new_row_html = render_to_string(
-                    'house/_house_table_row.html',
-                    {'house': house},
-                    request=request
-                )
-                return JsonResponse({'success': True, 'html': new_row_html})
+                return JsonResponse({'success': True})
             else:
                 return redirect(self.success_url)
         else:
@@ -137,12 +167,7 @@ class HouseUpdateView(View):
             detail_form.save()
             
             if is_ajax:
-                updated_row_html = render_to_string(
-                    'house/_house_table_row.html',
-                    {'house': house},
-                    request=request
-                )
-                return JsonResponse({'success': True, 'html': updated_row_html})
+                return JsonResponse({'success': True})
             else:
                 return redirect(self.success_url)
         else:
@@ -173,16 +198,39 @@ def load_towns(request):
 # ==========================================
 # 仲介 (Agent) 相關 Views
 # ==========================================
-# ... (AgentListView, AgentCreateView, AgentDetailView, AgentUpdateView 保持不變) ...
-# (你提供的 views.py 中 Agent 相關的 View 已經是升級後的，保持不變即可)
 class AgentListView(View):
     def get(self, request):
-        agents = Agent.objects.all().order_by('name')
+        # 【!! 修改 !!】 1. 獲取 GET 參數
+        query = request.GET.get('q', '')
+        city_filter = request.GET.get('city', '')
+
+        # 【!! 修改 !!】 2. 開始過濾
+        all_agents = Agent.objects.all()
+        
+        if query:
+            # 搜尋姓名
+            all_agents = all_agents.filter(name__icontains=query)
+        
+        if city_filter:
+            # 篩選縣市
+            all_agents = all_agents.filter(city=city_filter)
+
+        all_agents = all_agents.order_by('name') # 最後才排序
+
+        # 【!! 修改 !!】 3. Paginator 使用 "過濾後" 的結果
+        paginator = Paginator(all_agents, 10) 
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
         form = AgentForm() 
         context = {
-            'agents': agents,
-            'total_count': agents.count(),
-            'create_form': form, 
+            'agents': page_obj, 
+            'total_count': all_agents.count(),
+            'create_form': form,
+            # 【!! 新增 !!】 傳回篩選器選項和目前的值
+            'agent_city_choices': AGENT_CITY_CHOICES[1:], # 移除 ("_,"請選擇...")
+            'current_q': query,
+            'current_city': city_filter,
         }
         return render(request, 'house/agent_list.html', context)
     
@@ -194,6 +242,7 @@ class AgentListView(View):
             return HttpResponse(status=200)
         return redirect('house:agent_list')
 
+# ... (AgentCreateView, AgentDetailView, AgentUpdateView 保持不變) ...
 class AgentCreateView(View):
     def post(self, request):
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -204,20 +253,19 @@ class AgentCreateView(View):
         
         if form.is_valid():
             agent = form.save()
-            new_row_html = render_to_string(
-                'house/_agent_table_row.html',
-                {'agent': agent},
-                request=request
-            )
-            return JsonResponse({'success': True, 'html': new_row_html})
+            if is_ajax:
+                return JsonResponse({'success': True})
         else:
-            context = {'form': form}
-            form_html = render_to_string(
-                'house/_agent_form_fields.html', 
-                context, 
-                request=request
-            )
-            return JsonResponse({'success': False, 'html': form_html})
+            if is_ajax:
+                context = {'form': form}
+                form_html = render_to_string(
+                    'house/_agent_form_fields.html', 
+                    context, 
+                    request=request
+                )
+                return JsonResponse({'success': False, 'html': form_html})
+        
+        return redirect('house:agent_list') 
 
 class AgentDetailView(View):
     def get(self, request, pk):
@@ -255,39 +303,52 @@ class AgentUpdateView(View):
 
         if form.is_valid():
             agent = form.save()
-            updated_row_html = render_to_string(
-                'house/_agent_table_row.html',
-                {'agent': agent},
-                request=request
-            )
-            return JsonResponse({'success': True, 'html': updated_row_html})
+            if is_ajax:
+                return JsonResponse({'success': True})
         else:
-            context = {'form': form}
-            form_html = render_to_string(
-                'house/_agent_form_fields.html', 
-                context, 
-                request=request
-            )
-            return JsonResponse({'success': False, 'html': form_html})
+            if is_ajax:
+                context = {'form': form}
+                form_html = render_to_string(
+                    'house/_agent_form_fields.html', 
+                    context, 
+                    request=request
+                )
+                return JsonResponse({'success': False, 'html': form_html})
+        
+        return redirect('house:agent_list') 
 
 # ==========================================
 # 買家 (Buyer) 相關 Views
 # ==========================================
-
-# --- 【!! 重大修改 !!】 (BuyerListView) ---
 class BuyerListView(View):
     def get(self, request):
-        buyers = Buyer.objects.all().order_by('name')
-        # 【!! 修改 !!】 傳遞 'create_form' 供模板首次渲染
+        # 【!! 修改 !!】 1. 獲取 GET 參數
+        query = request.GET.get('q', '')
+
+        # 【!! 修改 !!】 2. 開始過濾
+        all_buyers = Buyer.objects.all()
+
+        if query:
+            # 搜尋姓名
+            all_buyers = all_buyers.filter(name__icontains=query)
+
+        all_buyers = all_buyers.order_by('name') # 最後才排序
+
+        # 【!! 修改 !!】 3. Paginator 使用 "過濾後" 的結果
+        paginator = Paginator(all_buyers, 10) 
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
         form = BuyerForm() 
         context = {
-            'buyers': buyers,
-            'total_count': buyers.count(),
-            'create_form': form, # <-- 傳遞空表單
+            'buyers': page_obj, 
+            'total_count': all_buyers.count(),
+            'create_form': form,
+            # 【!! 新增 !!】 傳回目前的值
+            'current_q': query,
         }
         return render(request, 'house/buyer_list.html', context)
     
-    # ... (POST 刪除邏輯保持不變) ...
     def post(self, request):
         buyer_id = request.POST.get('buyer_id')
         buyer = get_object_or_404(Buyer, pk=buyer_id)
@@ -296,7 +357,7 @@ class BuyerListView(View):
             return HttpResponse(status=200)
         return redirect('house:buyer_list')
 
-# --- 【!! 重大修改 !!】 (BuyerCreateView) ---
+# ... (BuyerCreateView, BuyerDetailView, BuyerUpdateView 保持不變) ...
 class BuyerCreateView(View):
     def post(self, request):
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
@@ -307,25 +368,20 @@ class BuyerCreateView(View):
         
         if form.is_valid():
             buyer = form.save()
-            new_row_html = render_to_string(
-                'house/_buyer_table_row.html',
-                {'buyer': buyer},
-                request=request
-            )
-            return JsonResponse({'success': True, 'html': new_row_html})
+            if is_ajax:
+                return JsonResponse({'success': True})
         else:
-            # 【!! 修改 !!】
-            # 驗證失敗，回傳 "帶有錯誤" 的表單 HTML
-            # (模仿 AgentCreateView)
-            context = {'form': form}
-            form_html = render_to_string(
-                'house/_buyer_form_fields.html', 
-                context, 
-                request=request
-            )
-            return JsonResponse({'success': False, 'html': form_html})
+            if is_ajax:
+                context = {'form': form}
+                form_html = render_to_string(
+                    'house/_buyer_form_fields.html', 
+                    context, 
+                    request=request
+                )
+                return JsonResponse({'success': False, 'html': form_html})
+        
+        return redirect('house:buyer_list') 
 
-# ... (BuyerDetailView 保持不變) ...
 class BuyerDetailView(View):
     def get(self, request, pk):
         buyer = get_object_or_404(Buyer, pk=pk)
@@ -335,14 +391,8 @@ class BuyerDetailView(View):
         }
         return render(request, 'house/buyer_detail.html', context)
 
-# --- 【!! 重大新增 !!】 (BuyerUpdateView) ---
 class BuyerUpdateView(View):
-    """
-    處理 AJAX 的買家 "編輯" 功能
-    (模仿 AgentUpdateView)
-    """
     def get(self, request, pk):
-        # AJAX GET: 回傳 "已填入資料" 的表單 HTML
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         if not is_ajax:
             return redirect('house:buyer_list')
@@ -359,7 +409,6 @@ class BuyerUpdateView(View):
         return JsonResponse({'success': True, 'html': form_html})
 
     def post(self, request, pk):
-        # AJAX POST: 儲存 "編輯"
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
         if not is_ajax:
             return redirect('house:buyer_list')
@@ -369,19 +418,153 @@ class BuyerUpdateView(View):
 
         if form.is_valid():
             buyer = form.save()
-            # 成功: 回傳 "更新後的" 該列 <tr> HTML
-            updated_row_html = render_to_string(
-                'house/_buyer_table_row.html',
-                {'buyer': buyer},
-                request=request
-            )
-            return JsonResponse({'success': True, 'html': updated_row_html})
+            if is_ajax:
+                return JsonResponse({'success': True})
         else:
-            # 失敗: 回傳 "帶有錯誤" 的表單 HTML
-            context = {'form': form}
-            form_html = render_to_string(
-                'house/_buyer_form_fields.html', 
-                context, 
-                request=request
-            )
-            return JsonResponse({'success': False, 'html': form_html})
+            if is_ajax:
+                context = {'form': form}
+                form_html = render_to_string(
+                    'house/_buyer_form_fields.html', 
+                    context, 
+                    request=request
+                )
+                return JsonResponse({'success': False, 'html': form_html})
+        
+        return redirect('house:buyer_list') 
+
+
+# ==========================================
+# Excel 匯入 (保持不變)
+# ==========================================
+class ExcelUploadView(View):
+    
+    AGENT_COLUMN_MAP = {
+        '姓名': 'name',
+        '聯絡電話': 'phone',
+        '電子郵件': 'email',
+        '隸屬公司': 'company',
+        '分行名稱': 'branch',
+        '分行縣市': 'city',
+        '分行行政區': 'town',
+    }
+    
+    BUYER_COLUMN_MAP = {
+        '姓名': 'name',
+        '聯絡電話': 'phone',
+        '電子郵件': 'email',
+    }
+    
+    HOUSE_COLUMN_MAP = {
+        '地址': 'address',
+        '房屋類型': 'house_type',
+        '總價格（萬）': 'total_price',
+        '仲介': 'agent_name', 
+        '買家': 'buyer_name', 
+        '縣市': 'city',
+        '行政區': 'town',
+        '屋齡': 'house_age',
+        '建坪': 'floor_area',
+        '地坪': 'land_area',
+        '單價（萬/坪）': 'unit_price',
+        '出售日期': 'sold_time',
+    }
+
+    def post(self, request):
+        if not request.FILES.get('file'):
+            return JsonResponse({'success': False, 'error': '沒有上傳檔案。'}, status=400)
+
+        excel_file = request.FILES['file']
+        
+        try:
+            xls = pd.read_excel(excel_file, sheet_name=None)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'無法讀取 Excel 檔案，請確認格式正確。錯誤: {e}'}, status=400)
+
+        required_sheets = ['仲介', '買家', '房屋']
+        for sheet_name in required_sheets:
+            if sheet_name not in xls:
+                return JsonResponse({'success': False, 'error': f'Excel 檔案中缺少 "{sheet_name}" 工作表。'}, status=400)
+
+        try:
+            with transaction.atomic():
+                # ... (匯入仲介和買家的邏輯保持不變) ...
+                sheet_name = '仲介'
+                df_agent = xls[sheet_name].astype(str) 
+                df_agent = df_agent.rename(columns=self.AGENT_COLUMN_MAP)
+                for index, row in df_agent.iterrows():
+                    data = row.to_dict()
+                    data = {k: (None if pd.isna(v) or v == 'nan' else v) for k, v in data.items()}
+                    form = AgentForm(data)
+                    if not form.is_valid():
+                        errors = "; ".join([f"{k}: {v[0]}" for k, v in form.errors.items()])
+                        raise ValidationError(f'工作表 "{sheet_name}", 第 {index + 2} 行: {errors}')
+                    Agent.objects.update_or_create(name=data['name'], defaults=data)
+
+                sheet_name = '買家'
+                df_buyer = xls[sheet_name].astype(str)
+                df_buyer = df_buyer.rename(columns=self.BUYER_COLUMN_MAP)
+                for index, row in df_buyer.iterrows():
+                    data = row.to_dict()
+                    data = {k: (None if pd.isna(v) or v == 'nan' else v) for k, v in data.items()}
+                    form = BuyerForm(data)
+                    if not form.is_valid():
+                        errors = "; ".join([f"{k}: {v[0]}" for k, v in form.errors.items()])
+                        raise ValidationError(f'工作表 "{sheet_name}", 第 {index + 2} 行: {errors}')
+                    Buyer.objects.update_or_create(name=data['name'], defaults=data)
+
+                # ... (匯入房屋的邏輯保持不變) ...
+                sheet_name = '房屋'
+                df_house = xls[sheet_name].astype(str)
+                df_house = df_house.rename(columns=self.HOUSE_COLUMN_MAP)
+                for index, row in df_house.iterrows():
+                    data = row.to_dict()
+                    data = {k: (None if pd.isna(v) or v == 'nan' else v) for k, v in data.items()}
+
+                    try:
+                        agent_name = data.pop('agent_name') 
+                        agent_obj = Agent.objects.get(name=agent_name)
+                    except Agent.DoesNotExist:
+                        raise ValidationError(f'工作表 "{sheet_name}", 第 {index + 2} 行: 找不到仲介 "{agent_name}"。請先在 "仲介" 工作表建立。')
+                    
+                    try:
+                        buyer_name = data.pop('buyer_name') 
+                        buyer_obj = Buyer.objects.get(name=buyer_name)
+                    except Buyer.DoesNotExist:
+                        raise ValidationError(f'工作表 "{sheet_name}", 第 {index + 2} 行: 找不到買家 "{buyer_name}"。請先在 "買家" 工作表建立。')
+
+                    house_data = {}
+                    detail_data = {}
+                    for field in ['address', 'house_type', 'total_price']:
+                        if field in data: house_data[field] = data[field]
+                    for field in ['city', 'town', 'house_age', 'floor_area', 'land_area', 'unit_price', 'sold_time']:
+                        if field in data:
+                            if field == 'sold_time' and data[field]: detail_data[field] = data[field].split(' ')[0]
+                            else: detail_data[field] = data[field]
+                    
+                    house_data['agent'] = agent_obj
+                    house_data['buyers'] = buyer_obj
+
+                    house_form = HouseForm(house_data)
+                    detail_form = HouseDetailForm(detail_data)
+
+                    if not house_form.is_valid():
+                        errors = "; ".join([f"{k}: {v[0]}" for k, v in house_form.errors.items()])
+                        raise ValidationError(f'工作表 "{sheet_name}", 第 {index + 2} 行 (房屋資料): {errors}')
+                    if not detail_form.is_valid():
+                        errors = "; ".join([f"{k}: {v[0]}" for k, v in detail_form.errors.items()])
+                        raise ValidationError(f'工作表 "{sheet_name}", 第 {index + 2} 行 (詳細資料): {errors}')
+
+                    house_data['agent_id'] = agent_obj.id
+                    house_data['buyers_id'] = buyer_obj.id
+                    house_data.pop('agent') 
+                    house_data.pop('buyers') 
+
+                    house_obj, created = House.objects.update_or_create(address=house_data['address'], defaults=house_data)
+                    HouseDetail.objects.update_or_create(house=house_obj, defaults=detail_data)
+
+            return JsonResponse({'success': True, 'message': 'Excel 資料已成功匯入！'})
+
+        except ValidationError as e:
+            return JsonResponse({'success': False, 'error': f'資料驗證失敗: {e.message}'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': f'匯入過程中發生未預期的錯誤: {e}'}, status=500)
