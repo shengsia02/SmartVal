@@ -19,6 +19,7 @@ from django.core.paginator import Paginator
 # 【!! 新增 !!】 匯入 Q 物件，用於 "icontains" (包含) 查詢
 from django.db.models import Q
 
+
 # ==========================================
 # 房屋 (House) 相關 Views
 # ==========================================
@@ -215,7 +216,7 @@ class AgentListView(View):
             # 篩選縣市
             all_agents = all_agents.filter(city=city_filter)
 
-        all_agents = all_agents.order_by('name') # 最後才排序
+        all_agents = all_agents.order_by('-id', 'name') # 最後才排序
 
         # 【!! 修改 !!】 3. Paginator 使用 "過濾後" 的結果
         paginator = Paginator(all_agents, 10) 
@@ -332,7 +333,7 @@ class BuyerListView(View):
             # 搜尋姓名
             all_buyers = all_buyers.filter(name__icontains=query)
 
-        all_buyers = all_buyers.order_by('name') # 最後才排序
+        all_buyers = all_buyers.order_by('-id', 'name') # 最後才排序
 
         # 【!! 修改 !!】 3. Paginator 使用 "過濾後" 的結果
         paginator = Paginator(all_buyers, 10) 
