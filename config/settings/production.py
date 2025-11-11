@@ -7,7 +7,11 @@ import dj_database_url
 load_dotenv()
 
 DEBUG = False
-ALLOWED_HOSTS = ['yourdomain.com']
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+
+# 資料庫設定
+# Zeabur 會自動注入 POSTGRES_CONNECTION_STRING
+postgres_connection_string = os.getenv('POSTGRES_CONNECTION_STRING')
 
 # 使用 DATABASE_URL 設定資料庫
 DATABASES = {
