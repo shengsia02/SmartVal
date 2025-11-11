@@ -13,15 +13,27 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
 # Zeabur 會自動注入 POSTGRES_CONNECTION_STRING
 postgres_connection_string = os.getenv('POSTGRES_CONNECTION_STRING')
 
-# 使用 DATABASE_URL 設定資料庫
-DATABASES = {
-    'default': dj_database_url.parse(
-        os.getenv('DATABASE_URL'),
-        conn_max_age=600  # 連線池:連線最多保持 600 秒(10分鐘)
-    )
-}
+if postgres_connection_string:
+    # 在 Zeabur 上使用 PostgreSQL
+    DATABASES = {
+        'default': dj_database_url.parse(
+            postgres_connection_string,
+            conn_max_age=600  # 連線池:連線最多保持 600 秒
+        )
+    }
+else:
+    # 本地開發使用 SQLite (fallback)
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # 生產環境安全設定
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
+
+# 信任 Zeabur 的代理伺服器
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
