@@ -201,14 +201,29 @@
     
     form.addEventListener('submit', async function (e) {
       e.preventDefault(); 
+      console.log('[ListPageHandler] 表單提交開始');
+      console.log('[ListPageHandler] Form action:', form.action);
+      console.log('[ListPageHandler] Form method:', form.method);
+      
       clearErrors(errorContainer, errorList);
       submitBtn.disabled = true;
       submitBtn.textContent = '儲存中...';
 
       const formData = new FormData(form);
-      const actionUrl = form.action; 
+      const actionUrl = form.action;
+      
+      console.log('[ListPageHandler] Action URL:', actionUrl);
+      console.log('[ListPageHandler] CSRF Token:', formData.get('csrfmiddlewaretoken'));
+      
+      // 列出所有表單數據
+      console.log('[ListPageHandler] Form Data:');
+      for (let pair of formData.entries()) {
+        console.log(`  ${pair[0]}: ${pair[1]}`);
+      }
       
       try {
+          console.log('[ListPageHandler] 發送 AJAX 請求...');
+          
           const response = await fetch(actionUrl, {
             method: 'POST',
             body: formData,
@@ -218,11 +233,15 @@
             }
           });
           
+          console.log('[ListPageHandler] Response status:', response.status);
+          
           if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
           
           const data = await response.json();
+          console.log('[ListPageHandler] Response data:', data);
           
           if (data.success) {
+            console.log('[ListPageHandler] 儲存成功，重新載入頁面');
             // 【!! 重大修改 !!】
             // 為了讓後端分頁重新計算，我們不再動態插入 HTML，
             // 而是直接重新整理頁面。
@@ -232,9 +251,19 @@
             // (舊的動態插入邏輯已被移除)
 
           } else {
+            console.log('[ListPageHandler] 驗證失敗，顯示錯誤');
+            console.log('[ListPageHandler] 錯誤 HTML 長度:', data.html.length);
             // 【驗證失敗】: 後端回傳了 "帶有錯誤的" 表單 HTML
             formContentContainer.innerHTML = data.html;
             setupFormFeatures(form, config.commonFeatures);
+            
+            // 找到並顯示所有錯誤
+            const errorElements = formContentContainer.querySelectorAll('.text-red-600');
+            console.log('[ListPageHandler] 找到', errorElements.length, '個錯誤訊息');
+            errorElements.forEach((el, index) => {
+              console.log(`  錯誤 ${index + 1}:`, el.textContent);
+            });
+            
             const firstError = formContentContainer.querySelector('.text-red-600');
             if (firstError) {
                 firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });

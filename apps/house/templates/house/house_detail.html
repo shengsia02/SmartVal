@@ -18,25 +18,24 @@
     <div class="flex flex-col md:flex-row gap-6">
 
       <div class="flex-grow">
-        {# 【!! 修正 !!】 資訊字體大小從 text-sm 調整為 text-lg #}
         <div class="space-y-4 text-lg text-slate-700"> 
           
           <p><strong class="font-medium text-slate-900 w-28 inline-block">地址：</strong> {{ house.address }}</p>
           <p><strong class="font-medium text-slate-900 w-28 inline-block">房屋類型：</strong> {{ house.house_type }}</p>
-          <p><strong class="font-medium text-slate-900 w-28 inline-block">總價格：</strong> {{ house.total_price }} 萬</p>
-          
-          {% if house.detail %}
-            <p><strong class="font-medium text-slate-900 w-28 inline-block">縣市：</strong> {{ house.detail.city }}</p>
-            <p><strong class="font-medium text-slate-900 w-28 inline-block">行政區：</strong> {{ house.detail.town }}</p>
-            <p><strong class="font-medium text-slate-900 w-28 inline-block">屋齡：</strong> {{ house.detail.house_age }} 年</p>
-            <p><strong class="font-medium text-slate-900 w-28 inline-block">建坪：</strong> {{ house.detail.floor_area }} 坪</p>
-            <p><strong class="font-medium text-slate-900 w-28 inline-block">地坪：</strong> {{ house.detail.land_area }} 坪</p>
-            <p><strong class="font-medium text-slate-900 w-28 inline-block">單價：</strong> {{ house.detail.unit_price }} 萬/坪</p>
-            <p><strong class="font-medium text-slate-900 w-28 inline-block">出售日期：</strong> {{ house.detail.sold_time|date:"Y-m-d" }}</p>
-          {% else %}
-             <p class="text-slate-500">尚無詳細資料。</p>
-          {% endif %}
-          
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">總價格：</strong> {{ house.total_price }} 萬元</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">縣市：</strong> {{ house.city }}</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">行政區：</strong> {{ house.town }}</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">屋齡：</strong> {{ house.house_age }} 年</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">建坪：</strong> {{ house.floor_area }} 坪</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">地坪：</strong> {{ house.land_area }} 坪</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">建坪單價：</strong> {{ house.unit_price }} 萬元/坪</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">所在層數：</strong> {{ house.floor_number }}</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">地上總層數：</strong> {{ house.total_floors }}</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">房間數：</strong> {{ house.room_count }}</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">經度：</strong> {{ house.longitude }}</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">緯度：</strong> {{ house.latitude }}</p>
+          <p><strong class="font-medium text-slate-900 w-28 inline-block">出售日期：</strong> {{ house.sold_time|date:"Y-m-d" }}</p>
+
           <p>
             <strong class="font-medium text-slate-900 w-28 inline-block">仲介：</strong>
             {% if house.agent %}

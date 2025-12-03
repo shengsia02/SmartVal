@@ -3,28 +3,100 @@
 
 /* 側邊欄連結樣式 */
 .sidebar-link {
-    transition: all 0.2s ease-in-out;
-  }
-  
-  /* 頁面滾動時平滑效果 */
-  html {
-    scroll-behavior: smooth;
-  }
-  
-  /* 自訂捲軸樣式 (Webkit 瀏覽器) */
-  ::-webkit-scrollbar {
-    width: 10px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 5px;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: #555;
-  }
+  transition: all 0.2s ease-in-out;
+}
+
+/* 頁面滾動時平滑效果 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 自訂捲軸樣式 (Webkit 瀏覽器) */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+
+/* ---------------------------------------------------- */
+/* 公共背景圖設定 */
+/* ---------------------------------------------------- */
+/* 【!! 修正處 2：將 fixed 相關屬性全部移除 !!】 */
+.background-image-wrapper { 
+background-image: url("../images/background_ntpu.jpg") !important;
+
+background-size: cover !important;
+background-attachment: scroll !important; /* 讓圖片隨內容滾動 */
+background-position: center center !important;
+
+/* 移除：position, top, left, width, height, z-index */
+min-height: 1px; /* 移除高度限制，讓 home.html 控制 */
+}
+
+/* ---------------------------------------------------- */
+/* 地圖容器設定 */
+/* ---------------------------------------------------- */
+#map {
+  height: 400px; /* Leaflet 必須設定明確高度 */
+  width: 100%;
+  border-radius: 0.5rem;
+}
+
+/* ---------------------------------------------------- */
+/* 地圖標記聚合樣式 - 紅色醒目主題 */
+/* ---------------------------------------------------- */
+/* 移除外層背景，只保留內層數字圓圈 */
+#map .marker-cluster-small,
+#map .marker-cluster-medium,
+#map .marker-cluster-large,
+.leaflet-marker-icon.marker-cluster {
+  background-color: transparent !important; /* 外層透明 */
+  border: none !important; /* 移除外層邊框 */
+}
+
+/* 聚合圓圈內部數字區域 - 這才是真正顯示的圓圈 */
+#map .marker-cluster-small div,
+#map .marker-cluster-medium div,
+#map .marker-cluster-large div,
+.marker-cluster div {
+  background-color: rgb(220, 38, 38) !important; /* 深紅色 */
+  color: white !important;
+  font-weight: bold !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  border: 3px solid white !important; /* 白色邊框讓圓圈更醒目 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important; /* 陰影效果 */
+}
+
+/* Hover 效果 - 移除 transform 以避免座標錯亂 */
+#map .marker-cluster:hover div {
+  opacity: 0.85 !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s ease !important;
+}
+
+/* 確保圓形 */
+#map .marker-cluster {
+  border-radius: 50% !important;
+}
+
+/* ---------------------------------------------------- */
+/* 表單卡片透明度設定 */
+/* ---------------------------------------------------- */
+.form-card {
+/* 設定白色背景並稍微透明 (0.95) */
+background-color: rgba(255, 255, 255, 0.75); 
+backdrop-filter: blur(5px);
+}

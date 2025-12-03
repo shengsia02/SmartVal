@@ -1,10 +1,7 @@
 from django import forms
-from .models import House, HouseDetail, Agent, Buyer
-from django.core.exceptions import ValidationError
-import re
+from .models import House, Agent, Buyer
 
 # --- 1. 台灣縣市行政區資料 (單一資料來源) ---
-# ... (city_districts 字典 ... 保持不變) ...
 city_districts = {
     '臺北市': [
         '中正區', '大同區', '中山區', '萬華區', '信義區', '松山區', '大安區', '南港區', '北投區', '內湖區', '士林區', '文山區'
@@ -22,7 +19,7 @@ city_districts = {
         '竹北市', '竹東鎮', '新埔鎮', '關西鎮', '峨眉鄉', '寶山鄉', '北埔鄉', '橫山鄉', '芎林鄉', '湖口鄉', '新豐鄉', '尖石鄉', '五峰鄉'
     ],
     '新竹市': [
-        '東區', '北區', '香山區'
+        '新竹市'
     ],
     '苗栗縣': [
         '苗栗市', '通霄鎮', '苑裡鎮', '竹南鎮', '頭份鎮', '後龍鎮', '卓蘭鎮', '西湖鄉', '頭屋鄉', '公館鄉', '銅鑼鄉', '三義鄉', '造橋鄉', '三灣鄉', '南庄鄉', '大湖鄉', '獅潭鄉', '泰安鄉'
@@ -43,7 +40,7 @@ city_districts = {
         '太保市', '朴子市', '布袋鎮', '大林鎮', '民雄鄉', '溪口鄉', '新港鄉', '六腳鄉', '東石鄉', '義竹鄉', '鹿草鄉', '水上鄉', '中埔鄉', '竹崎鄉', '梅山鄉', '番路鄉', '大埔鄉', '阿里山鄉'
     ],
     '嘉義市': [
-        '東區', '西區'
+        '嘉義市'
     ],
     '臺南市': [
         '中西區', '東區', '南區', '北區', '安平區', '安南區', '永康區', '歸仁區', '新化區', '左鎮區', '玉井區', '楠西區', '南化區', '仁德區', '關廟區', '龍崎區', '官田區', '麻豆區', '佳里區', '西港區', '七股區', '將軍區', '學甲區', '北門區', '新營區', '後壁區', '白河區', '東山區', '六甲區', '下營區', '柳營區', '鹽水區', '善化區', '大內區', '山上區', '新市區', '安定區'
@@ -77,85 +74,31 @@ city_districts = {
 # --- 2. 動態產生 Choices ---
 HOUSE_TYPE_CHOICES = [
     ("", "請選擇房屋類型"),
-    ("大樓", "大樓"),
-    ("公寓", "公寓"),
-    ("透天", "透天"),
+    ("大樓（有電梯）", "大樓（有電梯）"),
+    ("公寓（無電梯）", "公寓（無電梯）"),
 ]
 
 HOUSE_CITY_CHOICES = [("", "請選擇房屋所在縣市")] + [(city, city) for city in city_districts.keys()]
 AGENT_CITY_CHOICES = [("", "請選擇分行所在縣市")] + [(city, city) for city in city_districts.keys()]
 
 
-# --- 3. 通用的 CSS 樣式 (保持不變) ---
+# --- 3. 通用的 CSS 樣式 ---
 default_attrs = {'class': 'mt-2 p-2 w-full border rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500'}
 select_attrs = {
     'class': 'mt-2 p-2 w-full border rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 text-gray-500 valid:text-black'
 }
-# 【!! 修改 !!】 移除 'disabled': True，因為我們改用 Django 的 field.disabled
-disabled_style_attrs = {
-    'class': 'mt-2 p-2 w-full border rounded-lg shadow-sm bg-slate-100 text-slate-500 cursor-not-allowed'
-}
 
-# --- 4. HouseForm (修改 __init__) ---
+# --- 4. HouseForm（整合後的單一表單）---
 class HouseForm(forms.ModelForm):
+    """整合後的房屋表單，包含所有欄位"""
+    
+    # 自訂欄位
     house_type = forms.ChoiceField(
         choices=HOUSE_TYPE_CHOICES,
         required=True,
         error_messages={'required': '請選擇房屋類型'},
         widget=forms.Select(attrs=select_attrs)
     )
-    total_price = forms.IntegerField(
-        required=True,
-        error_messages={
-            'required': '請輸入房屋總價',
-            'invalid': '房屋總價必須是數字'
-        },
-        widget=forms.NumberInput(attrs={
-            **default_attrs,
-            'placeholder': '請輸入房屋總價',
-        })
-    )
-    class Meta:
-        model = House
-        fields = ['address', 'house_type', 'total_price', 'agent', 'buyers']
-        widgets = {
-            'address': forms.TextInput(attrs={**default_attrs, 'placeholder': '請輸入地址'}),
-            'agent':  forms.Select(attrs=select_attrs),
-            'buyers': forms.Select(attrs=select_attrs),
-        }
-        error_messages = {
-            'address': {
-                'required': '請輸入地址',
-            },
-            'agent': {
-                'required': '請選擇房屋仲介',
-            },
-            'buyers': {
-                'required': '請選擇買家',
-            },
-        }
-    def __init__(self, *args, **kwargs):
-        is_update = kwargs.pop('is_update', False)
-        super().__init__(*args, **kwargs)
-        self.fields['agent'].required = True
-        self.fields['buyers'].required = True
-        if not self.instance.pk or not self.instance.agent:
-            self.fields['agent'].empty_label = "請選擇房屋仲介"
-        if not self.instance.pk or not self.instance.buyers:
-            self.fields['buyers'].empty_label = "請選擇買家"
-            
-        if is_update:
-            fields_to_disable = ['address', 'house_type', 'agent', 'buyers']
-            for name in fields_to_disable:
-                if name in self.fields:
-                    # 【!! 關鍵修正 !!】
-                    # 使用 Django 的欄位屬性 .disabled，而不是修改 widget.attrs
-                    self.fields[name].disabled = True
-                    self.fields[name].widget.attrs.update(disabled_style_attrs)
-
-
-# --- 5. HouseDetailForm (修改 __init__) ---
-class HouseDetailForm(forms.ModelForm):
     city = forms.ChoiceField(
         choices=HOUSE_CITY_CHOICES,
         required=True,
@@ -168,55 +111,78 @@ class HouseDetailForm(forms.ModelForm):
         error_messages={'required': '請選擇房屋所在行政區'},
         widget=forms.Select(attrs=select_attrs)
     )
-    house_age = forms.DecimalField(
-        required=True, max_digits=10, decimal_places=2,
-        error_messages={'required': '請輸入屋齡', 'invalid': '屋齡必須是數字'},
-        widget=forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入屋齡', 'step': '0.01'})
-    )
-    floor_area = forms.DecimalField(
-        required=True, max_digits=10, decimal_places=2,
-        error_messages={'required': '請輸入建坪', 'invalid': '建坪必須是數字'},
-        widget=forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入建坪', 'step': '0.01'})
-    )
-    land_area = forms.DecimalField(
-        required=True, max_digits=10, decimal_places=2,
-        error_messages={'required': '請輸入地坪', 'invalid': '地坪必須是數字'},
-        widget=forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入地坪', 'step': '0.01'})
-    )
-    unit_price = forms.DecimalField(
-        required=True, max_digits=10, decimal_places=2,
-        error_messages={'required': '請輸入單價', 'invalid': '單價必須是數字'},
-        widget=forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入單價 (萬/坪)', 'step': '0.01'})
-    )
+    
     class Meta:
-        model = HouseDetail
+        model = House
         fields = [
-            'city', 'town', 'house_age', 'floor_area', 'land_area', 
-            'unit_price', 'sold_time', 'house_image'
+            'address', 'house_type', 'total_price', 'agent', 'buyers',
+            'city', 'town', 'house_age', 'floor_area', 'land_area',
+            'unit_price', 'floor_number', 'total_floors', 'room_count',
+            'longitude', 'latitude', 'sold_time', 'house_image'
         ]
         widgets = {
+            'address': forms.TextInput(attrs={**default_attrs, 'placeholder': '請輸入地址'}),
+            'total_price': forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入房屋總價'}),
+            'agent': forms.Select(attrs=select_attrs),
+            'buyers': forms.Select(attrs=select_attrs),
+            'house_age': forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入屋齡', 'step': '0.01'}),
+            'floor_area': forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入建坪', 'step': '0.01'}),
+            'land_area': forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入地坪', 'step': '0.01'}),
+            'unit_price': forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入建坪單價（萬元/坪）', 'step': '0.01'}),
+            'floor_number': forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入所在層數'}),
+            'total_floors': forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入地上總層數'}),
+            'room_count': forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入房間數'}),
+            'longitude': forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入經度', 'step': '0.000000000001'}),
+            'latitude': forms.NumberInput(attrs={**default_attrs, 'placeholder': '請輸入緯度', 'step': '0.000000000001'}),
             'sold_time': forms.DateInput(
                 format='%Y-%m-%d',
-                attrs={
-                    **default_attrs,
-                    'type': 'text',
-                    'placeholder': '請選擇出售日期'
-                }
+                attrs={**default_attrs, 'type': 'text', 'placeholder': '請選擇出售日期'}
             ),
-            'house_image': forms.ClearableFileInput(
-                attrs={'class': 'mt-2 p-2 w-full border rounded-lg'}
-            ),
+            'house_image': forms.ClearableFileInput(attrs={'class': 'mt-2 p-2 w-full border rounded-lg'}),
         }
         error_messages = {
-            'sold_time': {
-                'required': '請選擇出售日期',
-                'invalid': '請輸入有效的日期格式 (YYYY-MM-DD)'
-            }
+            'address': {'required': '請輸入地址'},
+            'total_price': {'required': '請輸入房屋總價', 'invalid': '房屋總價必須是數字'},
+            'agent': {'required': '請選擇房屋仲介'},
+            'buyers': {'required': '請選擇買家'},
+            'house_age': {'required': '請輸入屋齡（年）', 'invalid': '屋齡必須是數字'},
+            'floor_area': {'required': '請輸入建坪', 'invalid': '建坪必須是數字'},
+            'land_area': {'required': '請輸入地坪', 'invalid': '地坪必須是數字'},
+            'unit_price': {'required': '請輸入建坪單價（萬元/坪）', 'invalid': '單價必須是數字'},
+            'floor_number': {'required': '請輸入所在層數', 'invalid': '所在層數必須是整數'},
+            'total_floors': {'required': '請輸入地上總層數', 'invalid': '地上總層數必須是整數'},
+            'room_count': {'required': '請輸入房間數', 'invalid': '房間數必須是整數'},
+            'longitude': {'required': '請輸入經度', 'invalid': '經度必須是數字'},
+            'latitude': {'required': '請輸入緯度', 'invalid': '緯度必須是數字'},
+            'sold_time': {'required': '請選擇出售日期', 'invalid': '請輸入有效的日期格式 (YYYY-MM-DD)'},
         }
+    
     def __init__(self, *args, **kwargs):
-        is_update = kwargs.pop('is_update', False)
+        # 移除 is_update 參數（不再需要）
+        kwargs.pop('is_update', None)
         super().__init__(*args, **kwargs)
         
+        # 設定必填欄位
+        self.fields['agent'].required = True
+        self.fields['buyers'].required = True
+        self.fields['house_age'].required = True
+        self.fields['floor_area'].required = True
+        self.fields['land_area'].required = True
+        self.fields['unit_price'].required = True
+        self.fields['floor_number'].required = True
+        self.fields['total_floors'].required = True
+        self.fields['room_count'].required = True
+        self.fields['longitude'].required = True
+        self.fields['latitude'].required = True
+        self.fields['sold_time'].required = True
+        
+        # 設定空選項提示
+        if not self.instance.pk or not self.instance.agent:
+            self.fields['agent'].empty_label = "請選擇房屋仲介"
+        if not self.instance.pk or not self.instance.buyers:
+            self.fields['buyers'].empty_label = "請選擇買家"
+        
+        # 動態設定 town 選項
         selected_city = None
         if 'city' in self.data:
             try:
@@ -231,17 +197,11 @@ class HouseDetailForm(forms.ModelForm):
             self.fields['town'].choices = [("", "請選擇房屋所在行政區")] + town_choices
         else:
             self.fields['town'].choices = [("", "請先選擇房屋所在縣市")]
-            
-        if is_update:
-            fields_to_disable = ['city', 'town', 'sold_time']
-            for field_name in fields_to_disable:
-                if field_name in self.fields:
-                    # 【!! 關鍵修正 !!】
-                    # 使用 Django 的欄位屬性 .disabled，而不是修改 widget.attrs
-                    self.fields[field_name].disabled = True
-                    self.fields[field_name].widget.attrs.update(disabled_style_attrs)
 
-# --- 6. AgentForm (遵循選項 B) ---
+
+# --- 移除 HouseDetailForm（已整合到 HouseForm）---
+
+# --- 6. AgentForm ---
 class AgentForm(forms.ModelForm):
     city = forms.ChoiceField(
         choices=AGENT_CITY_CHOICES,
@@ -267,7 +227,7 @@ class AgentForm(forms.ModelForm):
     )
     company = forms.CharField(
         required=True, 
-        error_messages={'required': '請輸入隸屬品牌'}, 
+        error_messages={'required': '請輸入隸屬公司'}, 
         widget=forms.TextInput(attrs={**default_attrs, 'placeholder': '例如：信義房屋'})
     )
     branch = forms.CharField(
@@ -307,7 +267,7 @@ class AgentForm(forms.ModelForm):
         else:
             self.fields['town'].choices = [("", "請先選擇分行所在縣市")]
 
-# --- 7. BuyerForm (遵循選項 B) ---
+# --- 7. BuyerForm  ---
 class BuyerForm(forms.ModelForm):
     phone = forms.CharField(
         required=True, 

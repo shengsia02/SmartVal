@@ -37,14 +37,44 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # 必須放在最前面！
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',  # allauth 需要
+
     'apps.house',
     'apps.core',
+    'apps.accounts',
+
+    # allauth 相關
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',  # Google 登入
+    
+    'widget_tweaks',
+
+    # Channels（WebSocket 支援）
+    'channels',
+
+    'django_celery_beat',  # 新增這行
+]
+
+SITE_ID = 1
+
+# 自訂使用者模型
+AUTH_USER_MODEL = 'accounts.User'
+
+AUTHENTICATION_BACKENDS = [
+    # Django 預設的認證後端
+    'django.contrib.auth.backends.ModelBackend',
+
+    # allauth 的認證後端 (支援社交登入)
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 MIDDLEWARE = [
@@ -56,7 +86,37 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',  # ← 加在這裡！allauth 必要的 middleware
 ]
+
+# allauth 設定
+ACCOUNT_AUTHENTICATION_METHOD = 'username_email'  # 允許使用 username 或 email 登入
+ACCOUNT_EMAIL_REQUIRED = True  # 註冊時必須填寫 email
+ACCOUNT_EMAIL_VERIFICATION = 'optional'  # email 驗證為選填 (可改為 'mandatory' 強制驗證)
+ACCOUNT_USERNAME_REQUIRED = False  # 社交登入不需要 username，使用 email 即可
+LOGIN_REDIRECT_URL = '/'  # 登入後導向首頁
+LOGOUT_REDIRECT_URL = '/'  # 登出後導向首頁
+
+# 社交登入設定
+SOCIALACCOUNT_AUTO_SIGNUP = True  # 使用社交登入時自動建立帳號
+SOCIALACCOUNT_QUERY_EMAIL = True  # 向社交平台請求 email
+SOCIALACCOUNT_LOGIN_ON_GET = True  # 直接重定向到 OAuth 頁面，跳過中間確認頁面
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True  # 允許使用 email 進行社交帳號認證
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True  # 自動連結相同 email 的既有帳號
+
+# Google OAuth 設定：指定要取得的資訊範圍
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': [
+            'profile',  # 取得個人資料（名字、頭像等）
+            'email',    # 取得 email
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',  # 不需要 refresh token
+        },
+        'FETCH_USERINFO': True,  # 從 Google 取得用戶資訊
+    }
+}
 
 # 靜態檔案設定
 STATIC_URL = 'static/'
@@ -110,6 +170,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,  
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -147,3 +210,71 @@ MEDIA_URL = '/media/'  # 瀏覽器訪問圖片的 URL 前綴
 MEDIA_ROOT = BASE_DIR / 'media'  # 儲存圖片的物理路徑
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000  # 根據需要設定
+
+
+# ==========================================
+# Cache 設定 - 使用 Redis
+# ==========================================
+REDIS_URI = os.getenv('REDIS_URI', 'redis://127.0.0.1:6379/1')
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': REDIS_URI,
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
+        'KEY_PREFIX': 'library',  # 所有 key 都會加上這個前綴
+        'TIMEOUT': 300,  # 預設快取時間 5 分鐘（單位：秒）
+    }
+}
+
+
+# ==========================================
+# ASGI 應用設定（支援 WebSocket）
+# ==========================================
+ASGI_APPLICATION = 'config.asgi.application'
+
+# ==========================================
+# Channel Layer 設定 - 使用 Redis
+# ==========================================
+# 直接使用 REDIS_URI，這樣密碼、host、port 都會自動帶入
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [REDIS_URI],  # 使用與 Cache 相同的連線設定
+        },
+    },
+}
+
+# ==========================================
+# Celery 設定 - 使用 Redis 作為 Broker
+# ==========================================
+# Broker：任務佇列存放的地方（使用 Redis）
+CELERY_BROKER_URL = REDIS_URI
+
+# Result Backend：任務結果存放的地方（可選，這裡也用 Redis）
+CELERY_RESULT_BACKEND = REDIS_URI
+
+# 時區設定（與 Django 一致）
+CELERY_TIMEZONE = TIME_ZONE
+
+# 接受的內容類型
+CELERY_ACCEPT_CONTENT = ['json']
+
+# 任務序列化格式
+CELERY_TASK_SERIALIZER = 'json'
+
+# 結果序列化格式
+CELERY_RESULT_SERIALIZER = 'json'
+
+# 啟動時重試連線（消除 Celery 6.0 棄用警告）
+CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# ==========================================
+# Celery Beat 定時任務設定
+# ==========================================
+
+# 使用 django-celery-beat 的資料庫排程器
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'

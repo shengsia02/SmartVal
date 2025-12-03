@@ -74,10 +74,10 @@
               房屋類型
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              總價
+              總價格
             </th>
             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-              房屋中介
+              房屋仲介
             </th>
             <th scope="col" class="relative px-6 py-3">
               <span class="sr-only">操作</span>
@@ -175,7 +175,7 @@
             </div>
           </div>
           <div id="modal-form-content" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-5">
-            {% include 'house/_house_form_fields.html' with form=create_form detail_form=create_detail_form %}
+            {% include 'house/_house_form_fields.html' with form=create_form %}
           </div>
           <div class="flex items-center gap-x-4 bg-gray-50 px-6 py-4 rounded-b-2xl sticky bottom-0 z-10 border-t">
             <button type="submit" id="modal-submit-btn"
