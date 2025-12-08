@@ -65,7 +65,7 @@ class HouseListConsumer(AsyncWebsocketConsumer):
 
     async def house_update(self, event):
         """
-        處理書籍更新事件
+        處理房屋更新事件
 
         這個方法名稱對應 group_send 中的 'type': 'house_update'
         當有人呼叫 group_send 時，這個方法會被觸發
@@ -78,3 +78,41 @@ class HouseListConsumer(AsyncWebsocketConsumer):
         }))
 
         print(f"[WebSocket] 已發送給客戶端: {event['action']}")
+
+# 【新增】AgentListConsumer
+class AgentListConsumer(AsyncWebsocketConsumer):
+    GROUP_NAME = 'agent_updates'
+
+    async def connect(self):
+        await self.channel_layer.group_add(self.GROUP_NAME, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.GROUP_NAME, self.channel_name)
+
+    # 對應 Signal 中的 event_type='agent_update'
+    async def agent_update(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'agent_update',
+            'action': event['action'],
+            'message': event['message'],
+        }))
+
+# 【新增】BuyerListConsumer
+class BuyerListConsumer(AsyncWebsocketConsumer):
+    GROUP_NAME = 'buyer_updates'
+
+    async def connect(self):
+        await self.channel_layer.group_add(self.GROUP_NAME, self.channel_name)
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        await self.channel_layer.group_discard(self.GROUP_NAME, self.channel_name)
+
+    # 對應 Signal 中的 event_type='buyer_update'
+    async def buyer_update(self, event):
+        await self.send(text_data=json.dumps({
+            'type': 'buyer_update',
+            'action': event['action'],
+            'message': event['message'],
+        }))

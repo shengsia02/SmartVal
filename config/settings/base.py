@@ -90,10 +90,17 @@ MIDDLEWARE = [
 ]
 
 # allauth 設定
-ACCOUNT_AUTHENTICATION_METHOD = 'username_email'  # 允許使用 username 或 email 登入
-ACCOUNT_EMAIL_REQUIRED = True  # 註冊時必須填寫 email
+# ACCOUNT_AUTHENTICATION_METHOD = 'username_email'  # 允許使用 username 或 email 登入
+ACCOUNT_LOGIN_METHODS = {'email', 'username'}
+# ACCOUNT_EMAIL_REQUIRED = True  # 註冊時必須填寫 email
 ACCOUNT_EMAIL_VERIFICATION = 'optional'  # email 驗證為選填 (可改為 'mandatory' 強制驗證)
-ACCOUNT_USERNAME_REQUIRED = False  # 社交登入不需要 username，使用 email 即可
+# ACCOUNT_USERNAME_REQUIRED = False  # 社交登入不需要 username，使用 email 即可
+ACCOUNT_SIGNUP_FIELDS = [
+    'email*',       # Email 必填
+    'username',     # Username (沒加 * 代表非必填，若你要必填請改成 'username*')
+    'password1*',   # 密碼 必填 (對應警告中的建議)
+    'password2*',   # 確認密碼 必填 (對應警告中的建議)
+]
 LOGIN_REDIRECT_URL = '/'  # 登入後導向首頁
 LOGOUT_REDIRECT_URL = '/'  # 登出後導向首頁
 
@@ -224,7 +231,7 @@ CACHES = {
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         },
-        'KEY_PREFIX': 'library',  # 所有 key 都會加上這個前綴
+        'KEY_PREFIX': 'house',  # 所有 key 都會加上這個前綴
         'TIMEOUT': 300,  # 預設快取時間 5 分鐘（單位：秒）
     }
 }

@@ -1,0 +1,66 @@
+/* 通知容器 (固定在右下角) */
+#ws-toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* 通知卡片本體 */
+.ws-toast {
+    min-width: 300px;
+    background-color: #ffffff;
+    border-left: 5px solid #2563eb; /* 預設藍色 */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-radius: 4px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    animation: slideIn 0.3s ease-out;
+    opacity: 0; /* 初始透明 */
+    transition: opacity 0.5s ease-out;
+}
+
+/* 顯示狀態 */
+.ws-toast.show {
+    opacity: 1;
+}
+
+/* 文字區域 */
+.ws-toast-content {
+    color: #334155;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* 重新整理按鈕 */
+.ws-toast-btn {
+    background-color: #2563eb;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    margin-left: 12px;
+}
+
+.ws-toast-btn:hover {
+    background-color: #1d4ed8;
+}
+
+/* 進場動畫 */
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}

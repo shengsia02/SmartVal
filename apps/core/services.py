@@ -79,40 +79,126 @@ class HousePriceService:
         print(f"⚠️ 全部 Geocode 失敗: {full_address}")
         return 121.5, 25.0
     
-    # 【新增】尋找最近的房屋邏輯
+    # 【修改】擴充參數，接收所有篩選條件
     @classmethod
-    def find_nearby_houses(cls, target_lat, target_lon, city, limit=10):
+    def find_nearby_houses(cls, target_lat, target_lon, criteria, limit=10):
         """
-        找出同縣市中，距離目標經緯度最近的房屋
+        找出符合條件且距離最近的房屋
+        
+        Args:
+            target_lat (float): 目標緯度
+            target_lon (float): 目標經度
+            criteria (dict): 篩選條件字典 (包含 city, house_type, age 等)
+            limit (int): 回傳筆數
         """
         try:
-            # 1. 先篩選同縣市 (大幅減少計算量)
-            # 使用 select_related 優化查詢 (如果需要 agent 資訊)
-            candidates = House.objects.filter(city=city).values(
+            city = criteria.get('city')
+            
+            # 【調試】印出搜尋條件
+            print(f"🔍 [DEBUG] 搜尋條件: {criteria}")
+            
+            # 1. 執行篩選 (Database Filtering)
+            # 使用 Django ORM 的 range 查詢，這是在資料庫層級做的，效能最好
+            
+            # 【修正】確保範圍值不會是負數
+            room_count = float(criteria.get('room_count', 0))
+            house_age = float(criteria.get('house_age', 0))
+            total_floors = float(criteria.get('total_floors', 0))
+            floor_number = float(criteria.get('floor_number', 0))
+            floor_area = float(criteria.get('floor_area', 0))
+            land_area = float(criteria.get('land_area', 0))
+            
+            candidates = House.objects.filter(
+                city=city, # 基本條件：同縣市
+                
+                # 條件 1: 房屋類型一樣
+                house_type=criteria.get('house_type'),
+                
+                # 條件 7: 房間數一樣
+                room_count=criteria.get('room_count'),
+                
+                # 條件 2: 屋齡 ±5 年
+                house_age__range=(
+                    max(0, house_age - 5), 
+                    house_age + 5
+                ),
+                
+                # 條件 3: 總樓層 ±5 層
+                total_floors__range=(
+                    max(1, total_floors - 5), 
+                    total_floors + 5
+                ),
+                
+                # 條件 4: 所在樓層 ±5 層
+                floor_number__range=(
+                    max(1, floor_number - 5), 
+                    floor_number + 5
+                ),
+                
+                # 條件 5: 建坪 ±20 坪
+                floor_area__range=(
+                    max(0, floor_area - 10), 
+                    floor_area + 10
+                ),
+                
+                # 條件 6: 地坪 ±10 坪
+                land_area__range=(
+                    max(0, land_area - 5), 
+                    land_area + 5
+                )
+            ).exclude(
+                # 排除經緯度為 NULL 的資料
+                latitude__isnull=True
+            ).exclude(
+                longitude__isnull=True
+            ).values(
                 'id', 'address', 'total_price', 'house_type', 
                 'house_age', 'floor_area', 'latitude', 'longitude'
             )
             
-            print(f"🔍 [find_nearby_houses] 搜尋 {city} 的房屋，總共找到 {candidates.count()} 筆")
-
-            # 2. 計算距離並排序
-            # 注意：這裡使用 Python 列表推導式計算距離，適合資料量不大(幾千筆)的情況
-            # 如果資料量有幾十萬筆，建議改用 PostGIS 資料庫層級搜尋
+            print(f"🔍 [find_nearby_houses] 嚴格篩選後，找到 {candidates.count()} 筆房屋")
             
+            # 【調試】印出前3筆資料看看
+            for i, house in enumerate(list(candidates)[:3]):
+                print(f"  房屋 {i+1}: {house['address']}, 經緯度: ({house['latitude']}, {house['longitude']})")
+
+            # --- 退路機制 (Fallback) ---
+            # 如果嚴格篩選找不到足夠資料 (例如少於 5 筆)，自動放寬條件
+            # 這是為了避免地圖上空空如也，讓使用者體驗變差
+            if candidates.count() < 5:
+                print("⚠️ 符合條件的房屋過少，改為寬鬆模式 (僅看類型與屋齡範圍)")
+                candidates = House.objects.filter(
+                    city=city,
+                    house_type=criteria.get('house_type'),
+                    # 屋齡放寬到 ±10 年
+                    house_age__range=(
+                        max(0, house_age - 10), 
+                        house_age + 10
+                    )
+                    # 移除其他嚴格限制
+                ).exclude(
+                    latitude__isnull=True
+                ).exclude(
+                    longitude__isnull=True
+                ).values(
+                    'id', 'address', 'total_price', 'house_type', 
+                    'house_age', 'floor_area', 'latitude', 'longitude'
+                )
+                print(f"🔍 [find_nearby_houses] 寬鬆模式後，找到 {candidates.count()} 筆房屋")
+
+
+            # 2. 計算距離並排序 (與原本邏輯相同)
             nearby_list = []
             target_point = (target_lat, target_lon)
 
             for house in candidates:
-                # 略過沒有經緯度的資料
                 if not house['latitude'] or not house['longitude']:
+                    print(f"⚠️ 跳過無經緯度的房屋: {house['address']}")
                     continue
                 
                 house_point = (house['latitude'], house['longitude'])
-                
-                # 計算距離 (單位: 公里)
                 dist = geodesic(target_point, house_point).km
                 
-                # 整理要回傳給前端的資料格式
                 house_data = {
                     'address': house['address'],
                     'price': house['total_price'],
@@ -129,14 +215,17 @@ class HousePriceService:
             nearby_list.sort(key=lambda x: x['distance_km'])
             result = nearby_list[:limit]
             
-            print(f"✅ [find_nearby_houses] 處理完成: 有效房屋 {len(nearby_list)} 筆，回傳 {len(result)} 筆")
-            if len(result) > 0:
-                print(f"   最近距離: {result[0]['distance_km']} km, 最遠距離: {result[-1]['distance_km']} km")
+            print(f"✅ [find_nearby_houses] 最終回傳 {len(result)} 筆房屋資料")
+            if result:
+                print(f"   第一筆: {result[0]['address']} (距離: {result[0]['distance_km']} km)")
             
             return result
 
         except Exception as e:
-            print(f"尋找周邊房屋失敗: {e}")
+            import traceback
+            print(f"❌ 尋找周邊房屋失敗: {e}")
+            print(traceback.format_exc())
+            # 如果出錯，回傳空列表，不要讓整個預測掛掉
             return []
 
     @classmethod
@@ -204,7 +293,20 @@ class HousePriceService:
             predicted_price = round(float(real_price), 2)
             
             # 【新增】5. 搜尋周邊實價登錄行情
-            nearby_houses = cls.find_nearby_houses(latitude, longitude, city)
+            # 【修改】準備篩選條件字典 (criteria)
+            # 這裡把表單輸入的資料整理成好讀的格式傳給 find_nearby_houses
+            criteria = {
+                'city': city,
+                'house_type': str(input_data.get('house_type')),
+                'house_age': float(input_data.get('house_age', 0)),
+                'total_floors': float(input_data.get('total_floors', 0)),
+                'floor_number': float(input_data.get('floor_number', 0)),
+                'floor_area': float(input_data.get('floor_area', 0)),
+                'land_area': float(input_data.get('land_area', 0)),
+                'room_count': float(input_data.get('room_count', 0)),
+            }
+            # 【修改】呼叫新的搜尋方法
+            nearby_houses = cls.find_nearby_houses(latitude, longitude, criteria)
 
             # 【修改】回傳值多加一個 'nearby_houses' 與 'target_coords'
             return {

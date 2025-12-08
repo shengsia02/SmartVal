@@ -102,8 +102,8 @@ class EstimationForm(forms.Form):
     # 房屋類型 (下拉式選單，保持不變)
     HOUSE_TYPE_CHOICES = (
         ('', '請選擇'), # 預設提示
-        ('公寓 (無電梯)', '公寓 (無電梯)'),
-        ('大樓 (有電梯)', '大樓 (有電梯)'),
+        ('公寓（無電梯）', '公寓（無電梯）'),
+        ('大樓（有電梯）', '大樓（有電梯）'),
     )
     house_type = forms.ChoiceField(
         label="房屋類型",

@@ -31,8 +31,7 @@
       </button>
       
       <form method="post" action="{% url 'house:agent_list' %}"
-            class="delete-form"
-            onsubmit="return confirm('確定要刪除這筆仲介資料嗎？');">
+            class="delete-form">
         {% csrf_token %}
         <input type="hidden" name="agent_id" value="{{ agent.id }}">
         <button type="submit"

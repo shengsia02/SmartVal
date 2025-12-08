@@ -57,19 +57,22 @@
 
           townSelect.add(new Option('載入中...', ''));
           
-          fetch(`${features.townsUrl}?city=${selectedCity}`)
-            .then(response => response.json())
-            .then(data => {
+          sendRequest({
+            url: features.townsUrl,
+            method: 'GET',
+            params: { city: selectedCity },
+            onSuccess: (data) => {
               townSelect.innerHTML = '';
               const townPlaceholder = townSelect.dataset.placeholder || '請選擇行政區';
               townSelect.add(new Option(townPlaceholder, ''));
               data.towns.forEach(town => townSelect.add(new Option(town, town)));
-            })
-            .catch(error => {
+            },
+            onError: (error) => {
               console.error('Error loading towns:', error);
               townSelect.innerHTML = '';
               townSelect.add(new Option('載入失敗', ''));
-            });
+            }
+          });
         });
       }
     }
@@ -160,25 +163,24 @@
         formContentContainer.innerHTML = '<p class="text-center p-8">載入資料中...</p>';
         showModal();
         
-        try {
-            const response = await fetch(editUrl, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            });
-            if (!response.ok) throw new Error('伺服器讀取錯誤');
-            
-            const data = await response.json();
-            
-            if (data.success) {
-                formContentContainer.innerHTML = data.html;
-                setupFormFeatures(form, config.commonFeatures);
-            } else {
-                throw new Error('無法載入表單');
+        sendRequest({
+            url: editUrl,
+            method: 'GET',
+            onSuccess: (data) => {
+                if (data.success) {
+                    formContentContainer.innerHTML = data.html;
+                    setupFormFeatures(form, config.commonFeatures);
+                } else {
+                    hideModal();
+                    alert('無法載入表單');
+                }
+            },
+            onError: (error) => {
+                console.error('[ListPageHandler] 載入編輯表單失敗:', error);
+                hideModal();
+                alert('載入編輯資料失敗，請稍後再試。');
             }
-        } catch (error) {
-            console.error('[ListPageHandler] 載入編輯表單失敗:', error);
-            hideModal();
-            alert('載入編輯資料失敗，請稍後再試。');
-        }
+        });
     }
     
     // --- 3. 綁定基本事件監聽器 ---
@@ -221,62 +223,54 @@
         console.log(`  ${pair[0]}: ${pair[1]}`);
       }
       
-      try {
-          console.log('[ListPageHandler] 發送 AJAX 請求...');
-          
-          const response = await fetch(actionUrl, {
-            method: 'POST',
-            body: formData,
-            headers: {
-              'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-              'X-Requested-With': 'XMLHttpRequest' 
-            }
-          });
-          
-          console.log('[ListPageHandler] Response status:', response.status);
-          
-          if (!response.ok) throw new Error(`Server responded with status: ${response.status}`);
-          
-          const data = await response.json();
-          console.log('[ListPageHandler] Response data:', data);
-          
-          if (data.success) {
-            console.log('[ListPageHandler] 儲存成功，重新載入頁面');
-            // 【!! 重大修改 !!】
-            // 為了讓後端分頁重新計算，我們不再動態插入 HTML，
-            // 而是直接重新整理頁面。
-            hideModal(); // 先關閉 Modal
-            location.reload(); // 重新整理頁面
-            
-            // (舊的動態插入邏輯已被移除)
-
-          } else {
-            console.log('[ListPageHandler] 驗證失敗，顯示錯誤');
-            console.log('[ListPageHandler] 錯誤 HTML 長度:', data.html.length);
-            // 【驗證失敗】: 後端回傳了 "帶有錯誤的" 表單 HTML
-            formContentContainer.innerHTML = data.html;
-            setupFormFeatures(form, config.commonFeatures);
-            
-            // 找到並顯示所有錯誤
-            const errorElements = formContentContainer.querySelectorAll('.text-red-600');
-            console.log('[ListPageHandler] 找到', errorElements.length, '個錯誤訊息');
-            errorElements.forEach((el, index) => {
-              console.log(`  錯誤 ${index + 1}:`, el.textContent);
-            });
-            
-            const firstError = formContentContainer.querySelector('.text-red-600');
-            if (firstError) {
-                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
+      console.log('[ListPageHandler] 發送 AJAX 請求...');
+      
+      sendRequest({
+          url: actionUrl,
+          method: 'POST',
+          data: formData,
+          onSuccess: (data) => {
+              console.log('[ListPageHandler] Response data:', data);
+              
+              if (data.success) {
+                  console.log('[ListPageHandler] 儲存成功，重新載入頁面');
+                  // 【!! 重大修改 !!】
+                  // 為了讓後端分頁重新計算，我們不再動態插入 HTML，
+                  // 而是直接重新整理頁面。
+                  hideModal(); // 先關閉 Modal
+                  location.reload(); // 重新整理頁面
+                  
+                  // (舊的動態插入邏輯已被移除)
+              } else {
+                  console.log('[ListPageHandler] 驗證失敗，顯示錯誤');
+                  console.log('[ListPageHandler] 錯誤 HTML 長度:', data.html.length);
+                  // 【驗證失敗】: 後端回傳了 "帶有錯誤的" 表單 HTML
+                  formContentContainer.innerHTML = data.html;
+                  setupFormFeatures(form, config.commonFeatures);
+                  
+                  // 找到並顯示所有錯誤
+                  const errorElements = formContentContainer.querySelectorAll('.text-red-600');
+                  console.log('[ListPageHandler] 找到', errorElements.length, '個錯誤訊息');
+                  errorElements.forEach((el, index) => {
+                      console.log(`  錯誤 ${index + 1}:`, el.textContent);
+                  });
+                  
+                  const firstError = formContentContainer.querySelector('.text-red-600');
+                  if (firstError) {
+                      firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  }
+              }
+          },
+          onError: (error) => {
+              console.error('[ListPageHandler] 表單儲存失敗:', error);
+              showErrors(errorContainer, errorList, {'__all__': ['處理請求時發生未預期的錯誤。']});
+          },
+          onComplete: () => {
+              // (這個 finally 區塊已在上次修復)
+              submitBtn.disabled = false;
+              submitBtn.textContent = '儲存';
           }
-      } catch (error) {
-          console.error('[ListPageHandler] 表單儲存失敗:', error);
-          showErrors(errorContainer, errorList, {'__all__': ['處理請求時發生未預期的錯誤。']});
-      } finally {
-          // (這個 finally 區塊已在上次修復)
-          submitBtn.disabled = false;
-          submitBtn.textContent = '儲存';
-      }
+      });
     });
   
     // --- 6. 綁定 AJAX "刪除" 事件 (與之前相同) ---
@@ -288,27 +282,27 @@
             const deleteForm = e.target;
             const row = deleteForm.closest('tr');
             
-            // (確認對話框由 onsubmit 屬性處理)
+            // 顯示確認對話框
+            const confirmed = confirm('確定要刪除這筆資料嗎？');
             
-            fetch(deleteForm.action, {
+            // 如果用戶點擊「取消」，直接返回，不執行刪除
+            if (!confirmed) {
+                return;
+            }
+            
+            // 用戶點擊「確定」，執行刪除
+            sendRequest({
+                url: deleteForm.action,
                 method: 'POST',
-                body: new FormData(deleteForm),
-                headers: {
-                    'X-CSRFToken': deleteForm.querySelector('[name=csrfmiddlewaretoken]').value,
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => {
-                if (response.ok) {
+                data: new FormData(deleteForm),
+                onSuccess: (data) => {
                     // 【!! 修改 !!】
                     location.reload(); // 重新整理以更新分頁
-                } else {
+                },
+                onError: (error) => {
+                    console.error(`[ListPageHandler] AJAX 刪除失敗:`, error);
                     alert('刪除失敗，請重新整理頁面再試。');
                 }
-            })
-            .catch(error => {
-                console.error(`[ListPageHandler] AJAX 刪除失敗:`, error);
-                alert('刪除時發生錯誤。');
             });
         }
     });

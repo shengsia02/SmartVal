@@ -37,6 +37,7 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 ¢x  ¢x  apps.py
 ¢x  ¢x  forms.py
 ¢x  ¢x  models.py
+¢x  ¢x  services.py
 ¢x  ¢x  tests.py
 ¢x  ¢x  urls.py
 ¢x  ¢x  views.py
@@ -48,6 +49,9 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 ¢x  ¢x  ¢|¢w__pycache__
 ¢x  ¢x          __init__.cpython-310.pyc
 ¢x  ¢x          
+¢x  ¢u¢wml_models
+¢x  ¢x      smartval_model.pkl
+¢x  ¢x      
 ¢x  ¢u¢wstatic
 ¢x  ¢x  ¢|¢wcore
 ¢x  ¢x      ¢u¢wcss
@@ -59,6 +63,7 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 ¢x  ¢x      ¢|¢wjs
 ¢x  ¢x              estimation_handler.js
 ¢x  ¢x              global.js
+¢x  ¢x              utils.js
 ¢x  ¢x              
 ¢x  ¢u¢wtemplates
 ¢x  ¢x  ¢|¢wcore
@@ -72,6 +77,7 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 ¢x          apps.cpython-310.pyc
 ¢x          forms.cpython-310.pyc
 ¢x          models.cpython-310.pyc
+¢x          services.cpython-310.pyc
 ¢x          urls.cpython-310.pyc
 ¢x          views.cpython-310.pyc
 ¢x          __init__.cpython-310.pyc
@@ -90,11 +96,17 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 ¢x  ¢x  
 ¢x  ¢u¢wmigrations
 ¢x  ¢x  ¢x  0001_initial.py
+¢x  ¢x  ¢x  0002_merge_house_detail.py
+¢x  ¢x  ¢x  0003_alter_house_options_alter_house_agent_and_more.py
 ¢x  ¢x  ¢x  __init__.py
 ¢x  ¢x  ¢x  
 ¢x  ¢x  ¢|¢w__pycache__
 ¢x  ¢x          0001_initial.cpython-310.pyc
+¢x  ¢x          0002_alter_housedetail_latitude_and_more.cpython-310.pyc
 ¢x  ¢x          0002_alter_housedetail_sold_time.cpython-310.pyc
+¢x  ¢x          0002_merge_house_detail.cpython-310.pyc
+¢x  ¢x          0003_alter_housedetail_floor_area_and_more.cpython-310.pyc
+¢x  ¢x          0003_alter_house_options_alter_house_agent_and_more.cpython-310.pyc
 ¢x  ¢x          0003_remove_housedetail_description.cpython-310.pyc
 ¢x  ¢x          0004_alter_agent_options_agent_branch_agent_company_and_more.cpython-310.pyc
 ¢x  ¢x          0005_buyer_budget_buyer_email_buyer_notes_buyer_phone_and_more.cpython-310.pyc
@@ -106,21 +118,26 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 ¢x  ¢x  ¢x  agent.py
 ¢x  ¢x  ¢x  buyer.py
 ¢x  ¢x  ¢x  house.py
-¢x  ¢x  ¢x  house_detail.py
 ¢x  ¢x  ¢x  __init__.py
 ¢x  ¢x  ¢x  
 ¢x  ¢x  ¢|¢w__pycache__
 ¢x  ¢x          agent.cpython-310.pyc
+¢x  ¢x          agent.cpython-311.pyc
 ¢x  ¢x          buyer.cpython-310.pyc
 ¢x  ¢x          house.cpython-310.pyc
+¢x  ¢x          house.cpython-311.pyc
 ¢x  ¢x          house_detail.cpython-310.pyc
 ¢x  ¢x          __init__.cpython-310.pyc
+¢x  ¢x          __init__.cpython-311.pyc
 ¢x  ¢x          
 ¢x  ¢u¢wstatic
 ¢x  ¢x  ¢|¢whouse
 ¢x  ¢x      ¢u¢wcss
+¢x  ¢x      ¢x      websocket_style.css
+¢x  ¢x      ¢x      
 ¢x  ¢x      ¢|¢wjs
 ¢x  ¢x              list_page_handler.js
+¢x  ¢x              websocket_base.js
 ¢x  ¢x              
 ¢x  ¢u¢wtemplates
 ¢x  ¢x  ¢|¢whouse
@@ -143,20 +160,24 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 ¢x          apps.cpython-310.pyc
 ¢x          consumers.cpython-310.pyc
 ¢x          forms.cpython-310.pyc
+¢x          forms.cpython-311.pyc
 ¢x          models.cpython-310.pyc
 ¢x          routing.cpython-310.pyc
 ¢x          signals.cpython-310.pyc
 ¢x          urls.cpython-310.pyc
 ¢x          views.cpython-310.pyc
 ¢x          __init__.cpython-310.pyc
+¢x          __init__.cpython-311.pyc
 ¢x          
 ¢|¢w__pycache__
         __init__.cpython-310.pyc
+        __init__.cpython-311.pyc
         
 Folder PATH listing for volume Acer
 Volume serial number is 640B-D921
 C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\CONFIG
 ¢x  asgi.py
+¢x  celery.py
 ¢x  urls.py
 ¢x  wsgi.py
 ¢x  __init__.py
@@ -174,9 +195,12 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\CONFIG
 ¢x          
 ¢|¢w__pycache__
         asgi.cpython-310.pyc
+        celery.cpython-310.pyc
+        celery.cpython-311.pyc
         urls.cpython-310.pyc
         wsgi.cpython-310.pyc
         __init__.cpython-310.pyc
+        __init__.cpython-311.pyc
         
 Folder PATH listing for volume Acer
 Volume serial number is 640B-D921
@@ -204,6 +228,17 @@ Volume serial number is 640B-D921
 C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\STATICFILES
 ¢x  staticfiles.json
 ¢x  
+¢u¢waccount
+¢x  ¢|¢wjs
+¢x          account.b8b2bd9322b2.js
+¢x          account.b8b2bd9322b2.js.gz
+¢x          account.js
+¢x          account.js.gz
+¢x          onload.79dcf5a401d0.js
+¢x          onload.79dcf5a401d0.js.gz
+¢x          onload.js
+¢x          onload.js.gz
+¢x          
 ¢u¢wadmin
 ¢x  ¢u¢wcss
 ¢x  ¢x  ¢x  autocomplete.css
@@ -737,12 +772,26 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\STATICFILES
 ¢x                  
 ¢u¢wcore
 ¢x  ¢u¢wcss
+¢x  ¢x      global.253a89a6569a.css
+¢x  ¢x      global.253a89a6569a.css.gz
 ¢x  ¢x      global.6356a72e7ade.css
 ¢x  ¢x      global.6356a72e7ade.css.gz
+¢x  ¢x      global.a40b5e5c853d.css
+¢x  ¢x      global.a40b5e5c853d.css.gz
 ¢x  ¢x      global.css
 ¢x  ¢x      global.css.gz
 ¢x  ¢x      
+¢x  ¢u¢wimages
+¢x  ¢x      background_ntpu.8132873b0020.jpg
+¢x  ¢x      background_ntpu.jpg
+¢x  ¢x      
 ¢x  ¢|¢wjs
+¢x          estimation_handler.96f195ecedea.js
+¢x          estimation_handler.96f195ecedea.js.gz
+¢x          estimation_handler.ed0b91360c93.js
+¢x          estimation_handler.ed0b91360c93.js.gz
+¢x          estimation_handler.js
+¢x          estimation_handler.js.gz
 ¢x          global.d0e9f55017db.js
 ¢x          global.d0e9f55017db.js.gz
 ¢x          global.js
@@ -752,6 +801,10 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\STATICFILES
     ¢|¢wjs
             list_page_handler.69e14b79ccd5.js
             list_page_handler.69e14b79ccd5.js.gz
+            list_page_handler.f3a3b19cee09.js
+            list_page_handler.f3a3b19cee09.js.gz
+            list_page_handler.fdbde241ef70.js
+            list_page_handler.fdbde241ef70.js.gz
             list_page_handler.js
             list_page_handler.js.gz
             

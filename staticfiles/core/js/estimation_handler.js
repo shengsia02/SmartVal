@@ -40,32 +40,30 @@ document.addEventListener('DOMContentLoaded', function() {
                 townSelect.disabled = true; // 載入中先 disable
 
                 // 發送 AJAX 請求
-                fetch(`${ajaxUrl}?city=${selectedCity}`, { 
+                sendRequest({
+                    url: ajaxUrl,
                     method: 'GET',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest', 
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.towns && data.towns.length > 0) {
-                        data.towns.forEach(town => {
+                    params: { city: selectedCity },
+                    onSuccess: (data) => {
+                        if (data.towns && data.towns.length > 0) {
+                            data.towns.forEach(town => {
+                                const option = document.createElement('option');
+                                option.value = town;
+                                option.textContent = town;
+                                townSelect.appendChild(option);
+                            });
+                            townSelect.disabled = false; // 載入完成，啟用
+                        } else {
                             const option = document.createElement('option');
-                            option.value = town;
-                            option.textContent = town;
+                            option.value = "";
+                            option.textContent = "無可選行政區";
                             townSelect.appendChild(option);
-                        });
-                        townSelect.disabled = false; // 載入完成，啟用
-                    } else {
-                         const option = document.createElement('option');
-                         option.value = "";
-                         option.textContent = "無可選行政區";
-                         townSelect.appendChild(option);
+                        }
+                    },
+                    onError: (error) => {
+                        console.error('Error fetching towns:', error);
+                        townSelect.innerHTML = '<option value="">載入失敗</option>';
                     }
-                })
-                .catch(error => {
-                    console.error('Error fetching towns:', error);
-                    townSelect.innerHTML = '<option value="">載入失敗</option>'; 
                 });
             }
 
@@ -106,75 +104,64 @@ document.addEventListener('DOMContentLoaded', function() {
             // 3. 收集表單資料
             const formData = new FormData(form);
 
-            // 【👇 這是你漏掉的部分，請補上這兩行 👇】
-            const csrfTokenField = document.querySelector('[name=csrfmiddlewaretoken]');
-            const csrfToken = csrfTokenField ? csrfTokenField.value : '';
-
             // 4. 發送 POST 請求給後端
             // window.location.href 代表 POST 到當前頁面的 URL (即 HomeView)
-            fetch(window.location.href, { 
+            sendRequest({
+                url: window.location.href,
                 method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest', // 關鍵：告訴 Django 這是 AJAX
-                    'X-CSRFToken': csrfToken              // ★ 這是剛剛加的
-                }
-            })
-            .then(response => {
-                // 如果 Server 回傳 500 或 400，也要解析 JSON 取得錯誤訊息
-                return response.json(); 
-            })
-            .then(data => {
-                // 隱藏 Loading 動畫
-                if (loadingSection) loadingSection.classList.add('hidden');
+                data: formData,
+                onSuccess: (data) => {
+                    // 隱藏 Loading 動畫
+                    if (loadingSection) loadingSection.classList.add('hidden');
 
-                console.log('📥 後端回傳資料:', data); // Debug: 查看完整回傳資料
+                    console.log('📥 後端回傳資料:', data); // Debug: 查看完整回傳資料
 
-                if (data.success) {
-                    // 1. 顯示價格
-                    if (priceDisplay) priceDisplay.textContent = data.price;
-                    if (resultSection) {
-                        resultSection.classList.remove('hidden');
-                        // 平滑捲動視窗到結果區塊，提升體驗
-                        resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }
-                    
-                    // 2. 【新增】繪製地圖 - 加入資料驗證
-                    if (data.target_coords && data.nearby_houses) {
-                        console.log('🗺️ 準備初始化地圖...');
-                        console.log('目標座標:', data.target_coords);
-                        console.log('周邊房屋數量:', data.nearby_houses.length);
+                    if (data.success) {
+                        // 1. 顯示價格
+                        if (priceDisplay) priceDisplay.textContent = data.price;
+                        if (resultSection) {
+                            resultSection.classList.remove('hidden');
+                            // 平滑捲動視窗到結果區塊，提升體驗
+                            resultSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
                         
-                        // 確保 Leaflet 已載入
-                        if (typeof L === 'undefined') {
-                            console.error('❌ Leaflet 庫未載入！');
-                            alert('地圖功能載入失敗，請重新整理頁面');
+                        // 2. 【新增】繪製地圖 - 加入資料驗證
+                        if (data.target_coords && data.nearby_houses) {
+                            console.log('🗺️ 準備初始化地圖...');
+                            console.log('目標座標:', data.target_coords);
+                            console.log('周邊房屋數量:', data.nearby_houses.length);
+                            
+                            // 確保 Leaflet 已載入
+                            if (typeof L === 'undefined') {
+                                console.error('❌ Leaflet 庫未載入！');
+                                alert('地圖功能載入失敗，請重新整理頁面');
+                            } else {
+                                initMap(data.target_coords, data.nearby_houses);
+                            }
                         } else {
-                            initMap(data.target_coords, data.nearby_houses);
+                            console.warn('⚠️ 缺少地圖資料，無法顯示地圖');
                         }
                     } else {
-                        console.warn('⚠️ 缺少地圖資料，無法顯示地圖');
+                        // --- 失敗：顯示錯誤 ---
+                        // 如果後端回傳的是表單驗證錯誤 (data.errors)，可以在這裡處理顯示在欄位旁
+                        // 這裡先簡單用 alert 顯示
+                        let errorMsg = data.error || '輸入資料有誤，請檢查欄位。';
+                        
+                        // 如果是表單欄位錯誤 (data.errors 是個物件)
+                        if (data.errors) {
+                            // 簡單將錯誤訊息串接起來
+                            errorMsg += '\n' + JSON.stringify(data.errors);
+                        }
+                        
+                        alert('估價失敗：' + errorMsg);
+                        console.error('Validation errors:', data.errors);
                     }
-                } else {
-                    // --- 失敗：顯示錯誤 ---
-                    // 如果後端回傳的是表單驗證錯誤 (data.errors)，可以在這裡處理顯示在欄位旁
-                    // 這裡先簡單用 alert 顯示
-                    let errorMsg = data.error || '輸入資料有誤，請檢查欄位。';
-                    
-                    // 如果是表單欄位錯誤 (data.errors 是個物件)
-                    if (data.errors) {
-                        // 簡單將錯誤訊息串接起來
-                        errorMsg += '\n' + JSON.stringify(data.errors);
-                    }
-                    
-                    alert('估價失敗：' + errorMsg);
-                    console.error('Validation errors:', data.errors);
+                },
+                onError: (error) => {
+                    if (loadingSection) loadingSection.classList.add('hidden');
+                    alert('系統發生連線錯誤，請稍後再試。');
+                    console.error('Fetch error:', error);
                 }
-            })
-            .catch(error => {
-                if (loadingSection) loadingSection.classList.add('hidden');
-                alert('系統發生連線錯誤，請稍後再試。');
-                console.error('Fetch error:', error);
             });
         });
 

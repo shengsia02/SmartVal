@@ -5,6 +5,7 @@
 
 {% block extra_css %}
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <link rel="stylesheet" href="{% static 'house/css/websocket_style.css' %}"> 
 {% endblock %}
 
 
@@ -19,11 +20,9 @@
     </button>
   </div>
   
-  <!-- 【!! 修改 !!】 加大 padding (p-6) 和字體 (text-base) -->
   <form method="GET" action="{% url 'house:house_list' %}" class="mb-6 p-6 bg-white rounded-lg shadow-sm">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       
-      <!-- 搜尋欄 -->
       <div class="md:col-span-1">
         <label for="search-q" class="block text-base font-medium text-slate-700">搜尋地址</label>
         <input type="search" name="q" id="search-q" value="{{ current_q|default:'' }}"
@@ -31,7 +30,6 @@
                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base py-2.5 px-3">
       </div>
       
-      <!-- 篩選器 -->
       <div class="md:col-span-1">
         <label for="filter-house-type" class="block text-base font-medium text-slate-700">篩選房屋類型</label>
         <select name="house_type" id="filter-house-type"
@@ -45,7 +43,6 @@
         </select>
       </div>
       
-      <!-- 按鈕 -->
       <div class="md:col-span-1 flex items-end space-x-2">
         <button type="submit" class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2.5 text-base font-medium text-white shadow-sm hover:bg-blue-700">
           搜尋
@@ -56,7 +53,6 @@
       </div>
     </div>
   </form>
-  <!-- 【!! 修改結束 !!】 -->
 
 
   {% if houses %}
@@ -91,7 +87,6 @@
         </tbody>
       </table>
       
-      <!-- ... (分頁 HTML 保持不變) ... -->
       {% if houses.has_other_pages %}
         {% with q=current_q|default:'' house_type=current_house_type|default:'' %}
         <nav class="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6 rounded-b-lg">
@@ -152,7 +147,6 @@
     </div>
   {% endif %}
 
-  <!-- ... (Modal HTML 保持不變) ... -->
   <div id="house-form-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto transform transition-all">
       <div id="modal-header" class="bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
@@ -197,8 +191,8 @@
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
   <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/zh-tw.js"></script>
 
-  {% load static %}
   <script src="{% static 'house/js/list_page_handler.js' %}"></script>
+  <script src="{% static 'house/js/websocket_base.js' %}"></script>
   
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -231,7 +225,6 @@
         row_id_prefix: 'house-row-'
       });
 
-      // ... (頁碼跳轉 JS 保持不變) ...
       const pageInput = document.getElementById('page-jump-input');
       if (pageInput) {
         pageInput.addEventListener('keypress', function(e) {
@@ -251,4 +244,28 @@
       }
     });
   </script>
+
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          setupWebSocket('houses', 'house_update', '房屋');
+
+          // 【新增】監聽表單送出，標記為「我自己的更新」
+          const form = document.getElementById('house-form'); // 這是 Modal 裡的表單 ID
+          if (form) {
+              form.addEventListener('submit', function() {
+                  markAsMyUpdate(); // 呼叫剛剛寫在 websocket_base.js 的函式
+              });
+          }
+          // 3. 【新增這段】監聽列表中的所有「刪除」表單
+          // 因為刪除按鈕有很多個（每一行都有），所以要用 querySelectorAll 抓全部
+          const deleteForms = document.querySelectorAll('.delete-form');
+          deleteForms.forEach(function(deleteForm) {
+              deleteForm.addEventListener('submit', function() {
+                  // 當按下刪除確認後，標記「這是我做的更新」
+                  markAsMyUpdate(); 
+              });
+          });
+      });
+  </script>
+
 {% endblock %}

@@ -23,8 +23,7 @@
       </button>
 
       <form method="post" action="{% url 'house:buyer_list' %}"
-            class="delete-form"
-            onsubmit="return confirm('確定要刪除這筆買家資料嗎？');">
+            class="delete-form">
         {% csrf_token %}
         <input type="hidden" name="buyer_id" value="{{ buyer.id }}">
         <button type="submit"
