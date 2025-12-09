@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Step 3：調整外觀與選項</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <h2>Step 3：調整外觀與選項</h2>
+    <canvas id="myChart"></canvas>
+
+    <script>
+      new Chart(document.getElementById("myChart"), {
+        type: "bar",
+        data: {
+          labels: ["天下文化", "商周出版", "遠流", "城邦", "時報出版"],
+          datasets: [
+            {
+              label: "書籍數量",
+              data: [45, 32, 28, 21, 18],
+              backgroundColor: [
+                "#4F46E5",
+                "#7C3AED",
+                "#EC4899",
+                "#F59E0B",
+                "#10B981",
+              ],
+              // 【新增】長條外觀
+              borderRadius: 10, // 圓角（數字越大越圓）
+              borderWidth: 0, // 無邊框，看起來更乾淨
+            },
+          ],
+        },
+        // 【新增】options - 圖表整體設定
+        options: {
+          plugins: {
+            legend: {
+              display: false, // 隱藏圖例（只有一組資料時建議隱藏）
+            },
+          },
+          scales: {
+            y: {
+              beginAtZero: true, // Y 軸從 0 開始
+              grid: { color: "#eee" }, // 格線顏色（淡一點）
+            },
+            x: {
+              grid: { display: false }, // 隱藏 X 軸格線
+            },
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

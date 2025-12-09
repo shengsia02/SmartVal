@@ -2,6 +2,8 @@ superuser: sheng
 email: yishengsia@gmail.com
 password: sys20022002
 
+apps_name: ntpu-smartval.zeabur.app
+
 
 CSS 風格：
 tailwind 好看
