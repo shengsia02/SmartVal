@@ -29,7 +29,8 @@
     {# 表單容器 (z-10 確保在遮罩之上) #}
     <div class="relative z-10 w-full max-w-4xl px-4">
         
-        <div class="bg-white/80 backdrop-blur-sm shadow-2xl rounded-2xl p-6 md:p-8">
+        {# 【修改點 1】這裡必須要有 relative (原本的程式碼這行看起來沒有，建議加上以防萬一，雖然外層有但加這層較保險) #}
+        <div class="relative bg-white/80 backdrop-blur-sm shadow-2xl rounded-2xl p-6 md:p-8 overflow-hidden">
             
             <form method="post" class="space-y-6" id="estimation-form">
                 {% csrf_token %}
@@ -132,6 +133,35 @@
                     </button>
                 </div>
             </form>
+
+            {# 【修改點 2】新增：未登入時的遮罩與彈出視窗 #}
+            {% if not user.is_authenticated %}
+            <div class="absolute inset-0 z-50 bg-slate-200/60 backdrop-blur-md flex flex-col items-center justify-center text-center rounded-2xl">
+                <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm mx-4 transform transition-all scale-100 border border-gray-100">
+                    <div class="mb-4 text-blue-600 flex justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-2">會員專屬功能</h3>
+                    <p class="text-slate-500 mb-6">
+                        為了提供精確的估價服務並保存您的查詢紀錄，<br>請先登入後使用本功能。
+                    </p>
+                    
+                    {# 按鈕：點擊後前往登入頁，並設定 next 參數，登入後自動跳回首頁 #}
+                    <a href="{% url 'account_login' %}?next={% url 'core:home' %}" 
+                    class="inline-block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition transform hover:-translate-y-0.5">
+                        立即登入 / 註冊
+                    </a>
+                    
+                    <p class="mt-4 text-sm text-slate-400">
+                        還沒有帳號？ <a href="{% url 'account_signup' %}?next={% url 'core:home' %}" class="text-blue-600 hover:underline">免費註冊</a>
+                    </p>
+                </div>
+            </div>
+            {% endif %}
+            {# 【結束修改】 #}
+
         </div>
     </div>
 </section>
