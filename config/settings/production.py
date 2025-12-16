@@ -39,5 +39,5 @@ CSRF_COOKIE_SECURE = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 CSRF_TRUSTED_ORIGINS = [
-  'ntpu-smartval.zeabur.app'
+  'https://ntpu-smartval.zeabur.app'
 ]
