@@ -1,224 +1,300 @@
 {% extends "core/base_public.html" %}
 {% load static widget_tweaks i18n %}
 
-{% block title %}SmartVal 智能房屋估價系統 - 首頁{% endblock %}
+{% block title %}SmartVal 智能房屋估價系統{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
 <style>
-    /* 設定地圖高度 */
     #map { height: 400px; width: 100%; border-radius: 0.75rem; z-index: 1; }
-    
-    /* 確保 Leaflet 的圖層在最上層，但不會蓋過 Navbar (Navbar 通常 z-50) */
     .leaflet-pane { z-index: 10 !important; }
+    
+    @media (max-height: 800px) {
+        .compact-mode-padding { padding: 1rem !important; }
+        .compact-mode-space > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: 1rem !important; margin-bottom: 1rem !important; }
+        .compact-input { padding-top: 0.4rem !important; padding-bottom: 0.4rem !important; }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 
 {# === 區塊 1：Hero Section (背景圖 + 表單) === #}
-{# 使用 min-h-[90vh] 確保背景圖至少有視窗 90% 高，並用 flex 置中內容 #}
-<section class="relative w-full min-h-[90vh] flex items-center justify-center bg-cover bg-center bg-no-repeat py-20"
+<section class="relative w-full min-h-[calc(100vh-64px)] flex items-center justify-center bg-cover bg-center bg-no-repeat py-8"
          style="background-image: url('{% static 'core/images/background_ntpu.jpg' %}');">
     
-    {# 黑色遮罩，讓文字清楚一點 #}
-    <!-- <div class="absolute inset-0 bg-black/30"></div> -->
-
-    {# 表單容器 (z-10 確保在遮罩之上) #}
-    <div class="relative z-10 w-full max-w-4xl px-4">
+    {# 黑色遮罩 (讓文字更清晰，可選) #}
+    <div class="relative z-10 w-full max-w-3xl px-4">
         
-        {# 【修改點 1】這裡必須要有 relative (原本的程式碼這行看起來沒有，建議加上以防萬一，雖然外層有但加這層較保險) #}
-        <div class="relative bg-white/80 backdrop-blur-sm shadow-2xl rounded-2xl p-6 md:p-8 overflow-hidden">
+        <div class="relative bg-white/85 backdrop-blur-md shadow-2xl rounded-2xl p-4 sm:p-6 compact-mode-padding overflow-hidden border border-white/40">
             
-            <form method="post" class="space-y-6" id="estimation-form">
+            <form method="post" class="space-y-4 compact-mode-space" id="estimation-form">
                 {% csrf_token %}
                 
-                <div class="space-y-8">
-                    <div class="space-y-6 pb-6 border-b border-gray-200"> 
-                        <div class="flex justify-between items-center">
-                            <h2 class="text-2xl font-bold text-slate-800">房屋資訊</h2>
-                            <span class="text-sm font-medium text-red-600 bg-red-50 px-2 py-1 rounded">
-                                * 欄位皆必填
-                            </span>
+                <div class="space-y-5">
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-slate-800">房屋資訊</h2>
+                        <span class="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded">* 皆必填</span>
+                    </div>
+                    
+                    {# 1. 地址欄位組 #}
+                    <div class="space-y-1"> 
+                        <label class="block text-sm font-bold text-gray-700">地址</label>
+                        <div class="grid grid-cols-12 gap-2">
+                            <div class="col-span-12 sm:col-span-3">{{ form.city|add_class:"w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition compact-input" }}</div>
+                            <div class="col-span-12 sm:col-span-3">{{ form.town|add_class:"w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition compact-input" }}</div>
+                            <div class="col-span-12 sm:col-span-6">{{ form.street|add_class:"w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition compact-input" }}</div>
                         </div>
-                        
-                        {# 1. 地址欄位組 #}
-                        <div class="space-y-2"> 
-                            <label class="block text-sm font-bold text-gray-700">地址</label>
-                            <div class="grid grid-cols-12 gap-3">
-                                <div class="col-span-12 sm:col-span-3">{{ form.city|add_class:"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition" }}</div>
-                                <div class="col-span-12 sm:col-span-3">{{ form.town|add_class:"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition" }}</div>
-                                <div class="col-span-12 sm:col-span-6">{{ form.street|add_class:"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition" }}</div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-2 sm:gap-x-4 sm:gap-y-3">
+                        {# 2-8 欄位 (保持不變) #}
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">房屋類型</label>
+                            {{ form.house_type|add_class:"w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition compact-input" }}
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">屋齡</label>
+                            <div class="relative">
+                                {{ form.house_age|add_class:"w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8 transition compact-input" }}
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">年</span>
                             </div>
                         </div>
-
-                        {# 雙欄排版區塊 #}
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
-                            
-                            {# 2. 房屋類型 #}
-                            <div>
-                                <label for="{{ form.house_type.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-1">房屋類型</label>
-                                {{ form.house_type|add_class:"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition" }}
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">總樓層</label>
+                            <div class="relative">
+                                {{ form.total_floors|add_class:"w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8 transition compact-input" }}
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">樓</span>
                             </div>
-                            
-                            {# 3. 屋齡 #}
-                            <div>
-                                <label for="{{ form.house_age.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-1">屋齡</label>
-                                <div class="relative">
-                                    {{ form.house_age|add_class:"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-10 transition" }}
-                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">年</span>
-                                </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">所在樓層</label>
+                            <div class="relative">
+                                {{ form.floor_number|add_class:"w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8 transition compact-input" }}
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">樓</span>
                             </div>
-
-                            {# 4. 總樓層 #}
-                            <div>
-                                <label for="{{ form.total_floors.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-1">總樓層</label>
-                                <div class="relative">
-                                    {{ form.total_floors|add_class:"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-10 transition" }}
-                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">樓</span>
-                                </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">建坪</label>
+                            <div class="relative">
+                                {{ form.floor_area|add_class:"w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8 transition compact-input" }}
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">坪</span>
                             </div>
-
-                            {# 5. 所在樓層 #}
-                            <div>
-                                <label for="{{ form.floor_number.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-1">所在樓層</label>
-                                <div class="relative">
-                                    {{ form.floor_number|add_class:"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-10 transition" }}
-                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">樓</span>
-                                </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">地坪</label>
+                            <div class="relative">
+                                {{ form.land_area|add_class:"w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8 transition compact-input" }}
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">坪</span>
                             </div>
-                            
-                            {# 6. 建坪 #}
-                            <div>
-                                <label for="{{ form.floor_area.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-1">建坪</label>
-                                <div class="relative">
-                                    {{ form.floor_area|add_class:"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-10 transition" }}
-                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">坪</span>
-                                </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 mb-1">房間數</label>
+                            <div class="relative">
+                                {{ form.room_count|add_class:"w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-8 transition compact-input" }}
+                                <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-medium">間</span>
                             </div>
-                            
-                            {# 7. 地坪 #}
-                            <div>
-                                <label for="{{ form.land_area.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-1">地坪</label>
-                                <div class="relative">
-                                    {{ form.land_area|add_class:"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-10 transition" }}
-                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">坪</span>
-                                </div>
-                            </div>
-                            
-                            {# 8. 房間數 #}
-                            {# 【修改處】將 class="md:col-span-2" 移除，改為單純的 <div> #}
-                            <div>
-                                <label for="{{ form.room_count.id_for_label }}" class="block text-sm font-bold text-gray-700 mb-1">房間數</label>
-                                <div class="relative">
-                                    {{ form.room_count|add_class:"w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-10 transition" }}
-                                    <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">間</span>
-                                </div>
-                            </div>
-
-                        </div> {# grid 結束 #}
+                        </div>
                     </div>
                 </div>
 
-                {# 操作按鈕區域 #}
-                <div class="pt-2 flex justify-center gap-4">
-                    <button type="submit" class="w-full sm:w-auto px-10 py-3 bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold rounded-xl shadow-lg hover:shadow-xl transition transform hover:-translate-y-0.5">
+                {# 按鈕區域 #}
+                <div class="pt-2 flex justify-center gap-3">
+                    <button type="submit" class="w-full sm:w-auto px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 text-sm sm:text-base">
                         開始估價
                     </button>
-
-                    <button type="reset" class="w-full sm:w-auto px-10 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-lg font-bold rounded-xl transition">
+                    <button type="reset" class="w-full sm:w-auto px-8 py-2.5 bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 font-bold rounded-lg shadow-sm hover:shadow-md transition transform hover:-translate-y-0.5 text-sm sm:text-base">
                         清除重填
                     </button>
                 </div>
             </form>
 
-            {# 【修改點 2】新增：未登入時的遮罩與彈出視窗 #}
+            {# 未登入遮罩 (保持不變) #}
             {% if not user.is_authenticated %}
             <div class="absolute inset-0 z-50 bg-slate-200/60 backdrop-blur-md flex flex-col items-center justify-center text-center rounded-2xl">
-                <div class="bg-white p-8 rounded-2xl shadow-2xl max-w-sm mx-4 transform transition-all scale-100 border border-gray-100">
-                    <div class="mb-4 text-blue-600 flex justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm mx-4 border border-gray-100">
+                    <div class="mb-3 text-blue-600 flex justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
                     </div>
-                    <h3 class="text-2xl font-bold text-slate-800 mb-2">會員專屬功能</h3>
-                    <p class="text-slate-500 mb-6">
-                        為了提供精確的估價服務並保存您的查詢紀錄，<br>請先登入後使用本功能。
-                    </p>
-                    
-                    {# 按鈕：點擊後前往登入頁，並設定 next 參數，登入後自動跳回首頁 #}
-                    <a href="{% url 'account_login' %}?next={% url 'core:home' %}" 
-                    class="inline-block w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg transition transform hover:-translate-y-0.5">
+                    <h3 class="text-xl font-bold text-slate-800 mb-1">會員專屬功能</h3>
+                    <p class="text-slate-500 mb-4 text-sm">請先登入後使用本功能。</p>
+                    <a href="{% url 'account_login' %}?next={% url 'core:home' %}" class="inline-block w-full py-2.5 px-6 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md hover:-translate-y-0.5 transition text-sm">
                         立即登入 / 註冊
                     </a>
-                    
-                    <p class="mt-4 text-sm text-slate-400">
-                        還沒有帳號？ <a href="{% url 'account_signup' %}?next={% url 'core:home' %}" class="text-blue-600 hover:underline">免費註冊</a>
-                    </p>
                 </div>
             </div>
             {% endif %}
-            {# 【結束修改】 #}
-
         </div>
     </div>
 </section>
 
-{# === 區塊 2：結果展示區 (獨立白色背景) === #}
-{# 這個區塊完全獨立於上面的背景圖，會自然排列在下方 #}
-<section id="result-container" class="bg-white border-t border-gray-100 min-h-[400px]">
-    
-    <div class="max-w-4xl mx-auto px-4 py-16">
-        
-        {# Loading 動畫 (預設隱藏) #}
-        <div id="loading-section" class="hidden text-center py-12">
-            <div class="inline-flex flex-col items-center">
-                <svg class="animate-spin h-12 w-12 text-blue-600 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span class="text-xl font-medium text-slate-600">AI 模型正在計算中，請稍候...</span>
-            </div>
+{# === 新增區塊 2：核心優勢 (Features) === #}
+<section class="py-16 bg-white">
+    <div class="container mx-auto px-4 max-w-6xl">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-slate-800 mb-4">為什麼選擇 SmartVal？</h2>
+            <p class="text-slate-600 max-w-2xl mx-auto">
+                我們結合了最新的 AI 演算法與實價登錄大數據，為您提供最客觀、即時的房產價值分析。
+            </p>
         </div>
 
-        {# 估價結果區塊 (預設隱藏) #}
-        <div id="result-section" class="hidden animate-fade-in">
-            
-            <div class="text-center mb-12">
-                <h3 class="text-slate-500 text-lg font-medium mb-3 tracking-wide">AI 估算總價</h3>
-                <div class="flex items-baseline justify-center gap-2 text-blue-600">
-                    <span class="text-6xl font-extrabold tracking-tight" id="predicted-price">0</span>
-                    <span class="text-2xl font-bold">萬元</span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {# Feature 1 #}
+            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:shadow-lg transition text-center group">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
                 </div>
-                <p class="text-slate-400 text-sm mt-4 max-w-lg mx-auto">
-                    * 此結果由 AI 模型根據實價登錄歷史數據推算，僅供參考。實際成交價可能因屋況、裝潢、景觀等因素有所差異。
+                <h3 class="text-xl font-bold text-slate-800 mb-2">AI 大數據分析</h3>
+                <p class="text-slate-600 text-sm leading-relaxed">
+                    整合內政部實價登錄資料，運用機器學習模型，精準考量地段、屋齡、樓層等多重因子。
                 </p>
             </div>
 
-            {# 地圖顯示區塊 #}
-            <div class="bg-slate-50 rounded-2xl p-6 md:p-8 border border-slate-200">
-                <div class="mb-6">
-                    <h4 class="text-xl font-bold text-slate-800 flex items-center gap-2">
-                        <span>📍</span> 周邊實價登錄行情
-                    </h4>
-                    <p class="text-slate-500 mt-1">地圖顯示您估價的房屋位置 (紅色)，以及周邊最近的 10 筆成交紀錄 (藍色)。</p>
+            {# Feature 2 #}
+            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:shadow-lg transition text-center group">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
                 </div>
-                
-                {# 地圖容器 #}
-                <div id="map" class="shadow-inner border border-slate-300"></div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">即時快速估價</h3>
+                <p class="text-slate-600 text-sm leading-relaxed">
+                    無需漫長等待或人工審核，只要輸入房屋基本資訊，系統即刻為您計算出參考價格。
+                </p>
             </div>
-            
-        </div>
-        
-        {# 預設狀態 (還沒估價時顯示的空狀態，讓白色區域不那麼空) #}
-        <div id="empty-state" class="text-center py-12 text-slate-300">
-            <p>請在上方的表單輸入房屋資訊以開始估價</p>
-        </div>
 
+            {# Feature 3 #}
+            <div class="p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:shadow-lg transition text-center group">
+                <div class="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">透明客觀數據</h3>
+                <p class="text-slate-600 text-sm leading-relaxed">
+                    消除資訊不對稱，提供周邊相似物件的成交行情對比，讓您對市場價格瞭如指掌。
+                </p>
+            </div>
+        </div>
     </div>
 </section>
+
+{# === 新增區塊 3：使用情境 (Use Cases) === #}
+<section class="py-16 bg-slate-50">
+    <div class="container mx-auto px-4 max-w-6xl">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl font-bold text-slate-800 mb-4">掌握房價，無論您的角色是...</h2>
+            <div class="w-20 h-1 bg-blue-600 mx-auto rounded"></div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {# Case 1: 買方 #}
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
+                <div class="h-2 bg-green-500"></div>
+                <div class="p-8">
+                    <div class="text-green-600 font-bold tracking-wide text-sm mb-2 uppercase">For Buyers</div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-4">正在尋找夢想家園</h3>
+                    <p class="text-slate-600 mb-6">
+                        擔心買貴了嗎？透過 SmartVal 查詢合理價格區間，讓您在議價時更有底氣，每一分錢都花得值得。
+                    </p>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 避免高於市場行情的開價</li>
+                        <li class="flex items-center"><span class="text-green-500 mr-2">✓</span> 了解不同區域的價格差異</li>
+                    </ul>
+                </div>
+            </div>
+
+            {# Case 2: 賣方 #}
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
+                <div class="h-2 bg-blue-600"></div>
+                <div class="p-8">
+                    <div class="text-blue-600 font-bold tracking-wide text-sm mb-2 uppercase">For Sellers</div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-4">計劃出售現有房產</h3>
+                    <p class="text-slate-600 mb-6">
+                        不知道該開價多少？透過大數據分析，訂定最具競爭力的價格，縮短銷售週期，同時保障您的資產價值。
+                    </p>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li class="flex items-center"><span class="text-blue-600 mr-2">✓</span> 設定合理的銷售開價</li>
+                        <li class="flex items-center"><span class="text-blue-600 mr-2">✓</span> 掌握近期周邊成交動態</li>
+                    </ul>
+                </div>
+            </div>
+
+            {# Case 3: 投資客/屋主 #}
+            <div class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition">
+                <div class="h-2 bg-purple-500"></div>
+                <div class="p-8">
+                    <div class="text-purple-500 font-bold tracking-wide text-sm mb-2 uppercase">For Owners</div>
+                    <h3 class="text-2xl font-bold text-slate-800 mb-4">資產管理與追蹤</h3>
+                    <p class="text-slate-600 mb-6">
+                        定期追蹤名下房產價值波動。無論是為了增貸評估還是長期投資規劃，都能即時掌握資產現況。
+                    </p>
+                    <ul class="space-y-2 text-sm text-slate-500">
+                        <li class="flex items-center"><span class="text-purple-500 mr-2">✓</span> 監控房地產市場趨勢</li>
+                        <li class="flex items-center"><span class="text-purple-500 mr-2">✓</span> 活化資產配置決策</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# === 新增區塊 4：簡易流程 (CTA) === #}
+<section class="py-20 bg-blue-600 text-white relative overflow-hidden">
+    {# 背景裝飾圓形 #}
+    <div class="absolute top-0 left-0 -ml-20 -mt-20 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
+    <div class="absolute bottom-0 right-0 -mr-20 -mb-20 w-80 h-80 bg-white/10 rounded-full blur-3xl"></div>
+
+    <div class="container mx-auto px-4 max-w-4xl text-center relative z-10">
+        <h2 class="text-3xl font-bold mb-6">只需三步驟，立即獲取估價報告</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10 text-blue-100">
+            <div class="flex flex-col items-center">
+                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-xl font-bold mb-3 border border-white/30">1</div>
+                <p>輸入房屋詳細資訊</p>
+            </div>
+            <div class="flex flex-col items-center">
+                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-xl font-bold mb-3 border border-white/30">2</div>
+                <p>AI 系統即時運算</p>
+            </div>
+            <div class="flex flex-col items-center">
+                <div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-xl font-bold mb-3 border border-white/30">3</div>
+                <p>查看完整估價分析</p>
+            </div>
+        </div>
+
+        <button onclick="window.scrollTo({ top: 0, behavior: 'smooth' })"
+                class="inline-block px-10 py-3 bg-white text-blue-600 font-bold rounded-full shadow-lg hover:bg-gray-100 hover:scale-105 transition transform">
+            馬上試試看
+        </button>
+    </div>
+</section>
+
+{# Loading Modal (保持不變) #}
+<div id="valuation-loading-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl p-6 max-w-xs w-full mx-4 text-center transform scale-100 transition-all border border-white/20">
+        <div class="relative flex justify-center mb-4">
+            <div class="absolute inset-0 flex items-center justify-center">
+                <div class="w-16 h-16 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+            </div>
+            <div class="w-16 h-16 flex items-center justify-center rounded-full bg-blue-50">
+                <span class="text-2xl animate-pulse">🏠</span>
+            </div>
+        </div>
+        <h3 class="text-xl font-bold text-slate-800 mb-2">正在為您估價中...</h3>
+        <div class="space-y-1 text-slate-500 text-sm">
+            <p>AI 正在分析周邊實價登錄數據</p>
+            <p class="text-xs text-slate-400">請稍候，系統將自動跳轉至結果頁</p>
+        </div>
+    </div>
+</div>
 
 {% endblock content %}
 
@@ -229,20 +305,23 @@
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 <script src="{% static 'core/js/estimation_handler.js' %}"></script>
 
-{# 簡單的腳本：當有結果時，隱藏 empty-state #}
 <script>
-    const resultSec = document.getElementById('result-section');
-    const loadingSec = document.getElementById('loading-section');
-    const emptyState = document.getElementById('empty-state');
-    const formEl = document.getElementById('estimation-form');
-
-    if(formEl) {
-        formEl.addEventListener('submit', function() {
-            emptyState.classList.add('hidden');
-        });
-        formEl.addEventListener('reset', function() {
-            emptyState.classList.remove('hidden');
-        });
-    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('estimation-form');
+        const loadingModal = document.getElementById('valuation-loading-modal');
+        
+        if (form && loadingModal) {
+            form.addEventListener('submit', function(e) {
+                loadingModal.classList.remove('hidden');
+                loadingModal.classList.add('animate-fade-in');
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = '計算中...';
+                    submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
+                }
+            });
+        }
+    });
 </script>
 {% endblock %}

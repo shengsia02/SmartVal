@@ -1,0 +1,148 @@
+{% extends "core/base_public.html" %}
+{% load static humanize %}
+
+{% block title %}我的估價收藏 - SmartVal{% endblock %}
+
+{% block content %}
+<div class="bg-slate-50 min-h-screen py-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {% if records %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for record in records %}
+                <div id="card-{{ record.id }}" class="group relative bg-white rounded-xl border border-slate-200 overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1">
+                    
+                    <button onclick="removeFavorite({{ record.id }})" 
+                            class="absolute top-3 right-3 z-20 p-2 bg-white/80 backdrop-blur rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 transition shadow-sm border border-slate-200"
+                            title="移除收藏">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+
+                    <a href="{% url 'core:favorite_detail' record.id %}" class="block h-full">
+                        
+                        {# 卡片頂部：地圖縮圖 #}
+                        <div class="h-40 bg-slate-100 relative overflow-hidden">
+                            {% if record.latitude and record.longitude %}
+                                <div class="absolute inset-0 flex items-center justify-center bg-blue-50 text-blue-200">
+                                    <svg class="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0121 18.382V7.618a1 1 0 01-.806-.984l-4.665-2.585a.8.8 0 00-.813.064L9 7m6 10V7"></path></svg>
+                                </div>
+                                <div class="absolute top-3 left-3 bg-white/90 backdrop-blur text-xs font-bold px-2 py-1 rounded-md text-slate-600 shadow-sm">
+                                    {{ record.created_at|date:"Y/m/d" }}
+                                </div>
+                            {% else %}
+                                <div class="absolute inset-0 bg-slate-200 flex items-center justify-center text-slate-400">
+                                    無地圖資訊
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        {# 卡片內容區 #}
+                        <div class="p-5">
+                            <div class="flex justify-between items-start mb-2">
+                                <div class="w-full pr-8"> {# 這裡留一點 pr (padding-right) 避免文字太長撞到按鈕(如果按鈕放這裡的話) #}
+                                    <h3 class="text-lg font-bold text-slate-800 group-hover:text-blue-600 transition truncate">
+                                        {{ record.city }}{{ record.town }}
+                                    </h3>
+                                    <p class="text-sm text-slate-500 truncate">{{ record.street }}</p>
+                                </div>
+                                </div>
+                            
+                            <div class="flex items-baseline gap-1 my-3">
+                                <span class="text-2xl font-extrabold text-slate-800">{{ record.predicted_price|floatformat:0 }}</span>
+                                <span class="text-sm text-slate-500 font-medium">萬</span>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-2 text-xs text-slate-500 border-t border-slate-100 pt-3">
+                                <div class="flex items-center gap-1"><span>📐</span> {{ record.floor_area }} 坪</div>
+                                <div class="flex items-center gap-1"><span>📅</span> 屋齡 {{ record.house_age }} 年</div>
+                                <div class="flex items-center gap-1"><span>🏢</span> {{ record.floor_number }}/{{ record.total_floors }} 樓</div>
+                                <div class="flex items-center gap-1"><span>🛏️</span> {{ record.room_count }} 房</div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+
+            {# 分頁導覽 (如果有需要) #}
+            {% if is_paginated %}
+            <div class="mt-8 flex justify-center">
+                <div class="flex space-x-2">
+                    {% if page_obj.has_previous %}
+                        <a href="?page={{ page_obj.previous_page_number }}" class="px-4 py-2 bg-white border border-slate-300 rounded hover:bg-slate-50">上一頁</a>
+                    {% endif %}
+                    <span class="px-4 py-2 bg-slate-100 border border-transparent rounded text-slate-600">
+                        Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                    </span>
+                    {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}" class="px-4 py-2 bg-white border border-slate-300 rounded hover:bg-slate-50">下一頁</a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+
+        {% else %}
+            {# Empty State #}
+            <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
+                <div class="text-6xl mb-4">📂</div>
+                <h3 class="text-xl font-bold text-slate-800 mb-2">目前沒有收藏紀錄</h3>
+                <p class="text-slate-500 mb-6">您還沒有收藏任何估價結果，試著去估價看看吧！</p>
+                <a href="{% url 'core:home' %}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-lg">
+                    前往估價
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function removeFavorite(recordId) {
+        if (!confirm('確定要移除這筆估價紀錄嗎？此動作無法復原。')) {
+            return;
+        }
+
+        const url = `/favorites/remove/${recordId}/`;
+        
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+                // 👇【一定要加這行】後端才能識別這是 AJAX，進而回傳 JSON 而不是重導向
+                'X-Requested-With': 'XMLHttpRequest' 
+            },
+        })
+        .then(response => {
+            // 這裡加個保險：如果後端還是回傳了重導向(HTML)，這行會報錯或進入 catch
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                // 成功：只移除卡片 DOM，不刷新頁面
+                const card = document.getElementById(`card-${recordId}`);
+                if (card) {
+                    card.style.transition = "all 0.3s ease";
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.9)';
+                    setTimeout(() => {
+                        card.remove();
+                        // 可選：如果刪光了，重新整理以顯示 Empty State
+                        if (document.querySelectorAll('[id^="card-"]').length === 0) {
+                            window.location.reload();
+                        }
+                    }, 300);
+                }
+            } else {
+                alert('移除失敗：' + data.msg);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            // 如果沒加 header，後端回傳 302 重導向，fetch 有時會在這裡報錯
+            // 所以看到這個 alert 通常代表 header 沒加對
+            alert('發生錯誤，請稍後再試'); 
+        });
+    }
+</script>
+{% endblock %}

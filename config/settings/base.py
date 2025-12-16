@@ -45,6 +45,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',  # allauth 需要
+    
+    # === 【請加入下面這一行】 ===
+    'django.contrib.humanize',  # 用於數字加逗號 (intcomma) 和人性化時間
 
     'apps.house',
     'apps.core',

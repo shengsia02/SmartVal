@@ -790,21 +790,39 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\STATICFILES
 ¢x          estimation_handler.96f195ecedea.js.gz
 ¢x          estimation_handler.ed0b91360c93.js
 ¢x          estimation_handler.ed0b91360c93.js.gz
+¢x          estimation_handler.fdf97fe640f1.js
+¢x          estimation_handler.fdf97fe640f1.js.gz
 ¢x          estimation_handler.js
 ¢x          estimation_handler.js.gz
 ¢x          global.d0e9f55017db.js
 ¢x          global.d0e9f55017db.js.gz
 ¢x          global.js
 ¢x          global.js.gz
+¢x          utils.f21bb01d169a.js
+¢x          utils.f21bb01d169a.js.gz
+¢x          utils.js
+¢x          utils.js.gz
 ¢x          
 ¢|¢whouse
+    ¢u¢wcss
+    ¢x      websocket_style.1919fc82d13c.css
+    ¢x      websocket_style.1919fc82d13c.css.gz
+    ¢x      websocket_style.css
+    ¢x      websocket_style.css.gz
+    ¢x      
     ¢|¢wjs
             list_page_handler.69e14b79ccd5.js
             list_page_handler.69e14b79ccd5.js.gz
+            list_page_handler.9c9ba9e4c0e8.js
+            list_page_handler.9c9ba9e4c0e8.js.gz
             list_page_handler.f3a3b19cee09.js
             list_page_handler.f3a3b19cee09.js.gz
             list_page_handler.fdbde241ef70.js
             list_page_handler.fdbde241ef70.js.gz
             list_page_handler.js
             list_page_handler.js.gz
+            websocket_base.efad6b259da7.js
+            websocket_base.efad6b259da7.js.gz
+            websocket_base.js
+            websocket_base.js.gz
             
