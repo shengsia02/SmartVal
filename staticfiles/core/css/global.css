@@ -100,3 +100,84 @@ min-height: 1px; /* 移除高度限制，讓 home.html 控制 */
 background-color: rgba(255, 255, 255, 0.75); 
 backdrop-filter: blur(5px);
 }
+
+/* ---------------------------------------------------- */
+/* [修改] 客製化表單驗證錯誤樣式 - 紅色泡泡風格 */
+/* ---------------------------------------------------- */
+
+/* 錯誤輸入框的狀態 (維持紅色邊框，但移除過重的陰影，讓焦點在泡泡上) */
+.input-error {
+    border-color: #dc2626 !important; /* Tailwind red-600 更深一點的紅 */
+    background-color: #fef2f2 !important; /* Tailwind red-50 淡紅背景 */
+}
+
+/* 錯誤訊息「泡泡」本體 */
+.validation-bubble {
+    position: absolute;
+    /* 定位在輸入框的正上方，並留一點距離 */
+    bottom: calc(100% + 12px); 
+    left: 0;
+    z-index: 50; /* 確保浮在最上層 */
+    
+    /* 泡泡樣式 */
+    background-color: #fff; /* 白底 */
+    border: 1px solid #dc2626; /* 紅框 */
+    color: #dc2626; /* 紅字 */
+    padding: 0.5rem 0.75rem; /* 內距 */
+    border-radius: 0.5rem; /* 圓角 */
+    font-size: 0.85rem; /* 字體大小 */
+    font-weight: 500;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* 陰影增加立體感 */
+    white-space: nowrap; /* 避免文字折行 */
+    
+    /* 動畫 */
+    animation: popIn 0.2s ease-out forwards;
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+}
+
+/* 泡泡出現的動畫效果 */
+@keyframes popIn {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 繪製泡泡下方的小三角形箭頭 (外層紅框) */
+.validation-bubble::after {
+    content: '';
+    position: absolute;
+    top: 100%; /* 接在泡泡底部 */
+    left: 1.5rem; /* 箭頭的水平位置 */
+    border-width: 8px;
+    border-style: solid;
+    /* 上邊框紅色，其他透明 -> 形成向下紅三角形 */
+    border-color: #dc2626 transparent transparent transparent; 
+}
+
+/* 繪製泡泡下方的小三角形箭頭 (內層白色，用來蓋住紅框，製造空心感) */
+.validation-bubble::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: calc(1.5rem + 1px); /* 稍微偏移以配合邊框寬度 */
+    border-width: 7px;
+    border-style: solid;
+    /* 上邊框白色，其他透明 -> 形成向下白三角形蓋在紅三角形上 */
+    border-color: #fff transparent transparent transparent; 
+    z-index: 1;
+}
+
+/* ---------------------------------------------------- */
+/* [新增] Modal 彈出動畫 */
+/* ---------------------------------------------------- */
+@keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+.animate-bounce-in {
+    animation: bounceIn 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+}

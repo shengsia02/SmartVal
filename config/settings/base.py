@@ -219,6 +219,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MEDIA_URL = '/media/'  # 瀏覽器訪問圖片的 URL 前綴
 MEDIA_ROOT = BASE_DIR / 'media'  # 儲存圖片的物理路徑
 
+# 設定儲存後端 (這是解決你報錯的關鍵)
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
+
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10000  # 根據需要設定
 
 

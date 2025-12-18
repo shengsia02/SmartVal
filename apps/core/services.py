@@ -34,50 +34,64 @@ class HousePriceService:
     @classmethod
     def _get_lat_lon(cls, city, town, street):
         """
-        將地址轉換為經緯度 (三層式 Fallback 機制)
+        將地址轉換為經緯度 (嚴格模式)
         """
         geolocator = cls._get_geolocator()
         
-        # 組合原始完整地址
-        full_address = f"{city}{town}{street}"
+        # 1. 處理地址字串
+        # 我們只去掉「樓層」相關資訊，保留「路名」與「門牌號碼」
+        # 例如: "大德路151號12樓" -> "大德路151號"
+        clean_street = re.sub(r'\d+[樓Ff].*', '', street) 
         
-        # 處理路名：使用 Regex 去除門牌號碼 (例如 "信義路三段147號" -> "信義路三段")
-        # 邏輯：抓取 "路"、"街"、"道"、"段" 之後的數字+號，並將其移除
-        # 簡單版：直接把數字和 '號' 拿掉，保留路名和段數
-        street_only = re.sub(r'\d+號.*', '', street) # 去掉 "123號" 後面的所有東西
-        street_only = re.sub(r'\d+樓.*', '', street_only) # 去掉 "5樓" 
-        
-        # 定義嘗試順序 (由精細到寬鬆)
-        search_queries = [
-            # 1. 第一層：嘗試完整地址 (雖然 OSM 常失敗，但還是試試)
-            f"{city}{town}{street}", 
-            
-            # 2. 第二層：【關鍵】只查 "路名+段數" (根據你的截圖，這層成功率很高)
-            f"{city}{town}{street_only}",
-            
-            # 3. 第三層：只查 "行政區" (最後手段，雖然不準但比報錯好)
-            f"{city}{town}" 
-        ]
+        # 組合完整地址
+        full_address = f"{city}{town}{clean_street}"
 
-        for query in search_queries:
-            if not query: continue 
+        # 定義驗證函式：檢查回傳的地址是否包含目標縣市
+        def is_city_match(location, target_city):
+            if not location:
+                return False
+            # 處理「台」與「臺」的通用問題 (Nominatim 通常用 '臺')
+            target_city_std = target_city.replace('台', '臺')
+            result_address_std = location.address.replace('台', '臺')
+            
+            # 檢查縣市名稱是否在回傳的地址中
+            if target_city_std in result_address_std:
+                return True
+            
+            # 特殊情況：有時候 Nominatim 只有 "Keelung", "Taipei" 等英文或簡寫
+            # 這裡做一個簡單的 Log 警告，方便除錯
+            print(f"⚠️ [定位縣市不符] 目標: {target_city}, 找到: {location.address}")
+            return False
+        
+        # --- 嘗試 1：精確搜尋 (包含門牌號碼) ---
+        try:
+            # timeout 設為 3 秒
+            location = geolocator.geocode(f"{full_address}, Taiwan", timeout=3)
+            if location:
+                # 找到了！回傳座標，並標記 is_exact = True
+                return location.longitude, location.latitude, True 
+        except Exception:
+            pass # 失敗就繼續往下試
+
+        # --- 嘗試 2：退一步搜尋路名 (去除號碼) ---
+        # 邏輯：去掉 "數字+號" 及其後面的所有內容
+        # 例如 "大德路157號" -> "大德路"
+        road_only = re.sub(r'\d+號.*', '', clean_street)
+        road_address = f"{city}{town}{road_only}"
+        
+        # 避免 regex 刪過頭變空字串 (防呆)
+        if road_only and road_only != clean_street:
             try:
-                # 加上 Taiwan 限制範圍
-                # timeout 設為 3 秒即可，太久會卡住使用者體驗
-                location = geolocator.geocode(f"{query}, Taiwan", timeout=3)
-                
-                if location:
-                    # 為了 Debug 方便，你可以印出來看是哪一層成功的
-                    # print(f"📍 Geocode 成功 ({query}): {location.latitude}, {location.longitude}")
-                    return location.longitude, location.latitude
-                    
-            except Exception as e:
-                # 這裡不需要 print error，因為失敗我們會試下一個
-                continue
+                print(f"⚠️ 精確定位失敗，嘗試路名定位: {road_address}")
+                location = geolocator.geocode(f"{road_address}, Taiwan", timeout=3)
+                if location and is_city_match(location, city):
+                    return location.longitude, location.latitude, False
+            except Exception:
+                pass
 
-        # 真的全部失敗 (連行政區都找不到)，回傳預設值 (台北市中心)
+        # --- 3. 真的全部失敗 ---
         print(f"⚠️ 全部 Geocode 失敗: {full_address}")
-        return 121.5, 25.0
+        return None, None, False
     
     # 【修改】擴充參數，接收所有篩選條件
     @classmethod
@@ -235,7 +249,7 @@ class HousePriceService:
         """
         model = cls._get_model()
         if model is None:
-            return None
+            return {'error': '系統模型載入失敗，請聯繫管理員'}
 
         try:
             # --- 1. 準備基礎資料 ---
@@ -248,7 +262,14 @@ class HousePriceService:
             street = str(input_data.get('street', ''))
 
             # 【修正】傳入三個參數 (city, town, street)
-            longitude, latitude = cls._get_lat_lon(city, town, street)
+            longitude, latitude, is_exact = cls._get_lat_lon(city, town, street)
+
+            # 【修改處 2】檢查經緯度是否為 None
+            if longitude is None or latitude is None:
+                # 回傳地址錯誤，讓 View 層處理
+                return {
+                    'error': f'無法定位該地址：「{city}{town}{street}」。請確認地址是否正確，或嘗試輸入更完整的路名。'
+                }
 
             # --- 2. 建立 DataFrame (欄位名稱必須與訓練時完全一致) ---
             data_dict = {
@@ -309,14 +330,22 @@ class HousePriceService:
             nearby_houses = cls.find_nearby_houses(latitude, longitude, criteria)
 
             # 【修改】回傳值多加一個 'nearby_houses' 與 'target_coords'
-            return {
+            result = {
+                'success': True, # 標記成功
                 'price': predicted_price,
                 'nearby_houses': nearby_houses,
                 'target_coords': {'lat': latitude, 'lng': longitude}
             }
 
+            # [新增] 如果是模糊定位 (is_exact = False)，加入警告訊息
+            if not is_exact:
+                clean_road = re.sub(r'\d+號.*', '', street)
+                result['warning'] = f"注意：系統無法精確定位至門牌，目前估價結果是基於「{city}{town}{clean_road}」的平均區段行情，僅供參考。"
+
+            return result
+
         except Exception as e:
             import traceback
             print(f"預測錯誤: {e}")
             print(traceback.format_exc())
-            return None
+            return {'error': '系統發生預期外的錯誤，請稍後再試'}

@@ -4,19 +4,10 @@
 {% block title %}SmartVal 智能房屋估價系統{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
-<style>
-    #map { height: 400px; width: 100%; border-radius: 0.75rem; z-index: 1; }
-    .leaflet-pane { z-index: 10 !important; }
-    
-    @media (max-height: 800px) {
-        .compact-mode-padding { padding: 1rem !important; }
-        .compact-mode-space > :not([hidden]) ~ :not([hidden]) { --tw-space-y-reverse: 0; margin-top: 1rem !important; margin-bottom: 1rem !important; }
-        .compact-input { padding-top: 0.4rem !important; padding-bottom: 0.4rem !important; }
-    }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -30,13 +21,13 @@
         
         <div class="relative bg-white/85 backdrop-blur-md shadow-2xl rounded-2xl p-4 sm:p-6 compact-mode-padding overflow-hidden border border-white/40">
             
-            <form method="post" class="space-y-4 compact-mode-space" id="estimation-form">
+            <form method="post" class="space-y-4 compact-mode-space" id="estimation-form" novalidate>
                 {% csrf_token %}
                 
                 <div class="space-y-5">
                     <div class="flex justify-between items-center pb-3 border-b border-gray-200">
                         <h2 class="text-xl font-bold text-slate-800">房屋資訊</h2>
-                        <span class="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded">* 皆必填</span>
+                        <span class="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded">* 欄位皆必填</span>
                     </div>
                     
                     {# 1. 地址欄位組 #}
@@ -286,7 +277,7 @@
     </div>
 </section>
 
-{# Loading Modal (保持不變) #}
+<!-- {# Loading Modal (保持不變) #}
 <div id="valuation-loading-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center">
     <div class="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
     <div class="relative bg-white rounded-2xl shadow-2xl p-6 max-w-xs w-full mx-4 text-center transform scale-100 transition-all border border-white/20">
@@ -304,7 +295,92 @@
             <p class="text-xs text-slate-400">請稍候，系統將自動跳轉至結果頁</p>
         </div>
     </div>
+</div> -->
+
+{# === [新增] 右下角懸浮進度卡片 (取代舊的滿版 Modal) === #}
+<div id="floating-status-card" class="hidden fixed bottom-6 right-6 z-[60] w-80 bg-white rounded-xl shadow-2xl border border-blue-100 overflow-hidden transform transition-all duration-300 translate-y-20 opacity-0">
+    <div id="status-processing" class="p-4 flex items-center gap-4">
+        <div class="relative w-12 h-12 flex-shrink-0">
+            <div class="absolute inset-0 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+            <div class="absolute inset-0 flex items-center justify-center">
+                <span class="text-lg">🏠</span>
+            </div>
+        </div>
+        <div>
+            <h4 class="font-bold text-slate-800 text-sm">AI 智能估價中...</h4>
+            <p class="text-xs text-slate-500 mt-0.5">正在分析周邊實價登錄</p>
+        </div>
+    </div>
+
+    <div id="status-completed" class="hidden">
+        <div class="bg-green-50 p-4 flex items-center gap-4 cursor-pointer hover:bg-green-100 transition" onclick="goToResult()">
+            <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white flex-shrink-0 shadow-lg shadow-green-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <div class="flex-1">
+                <h4 class="font-bold text-green-800 text-sm">估價完成！</h4>
+                <p class="text-xs text-green-600 mt-0.5">點擊立即查看報告 ➔</p>
+            </div>
+        </div>
+    </div>
 </div>
+
+{# === [新增] 錯誤提示 Modal (配合你的 Tailwind 風格) === #}
+<div id="error-modal" class="hidden fixed inset-0 z-[70] flex items-center justify-center">
+    {# 背景遮罩：點擊背景也可關閉 #}
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" onclick="closeErrorModal()"></div>
+    
+    {# 彈窗本體 #}
+    <div class="relative bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center transform scale-100 transition-all border border-red-100 animate-bounce-in">
+        
+        {# 紅色錯誤圖示 #}
+        <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-50 mb-4 border border-red-100">
+            <svg class="h-8 w-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+        </div>
+
+        <h3 class="text-xl font-bold text-slate-800 mb-2">無法識別此地址</h3>
+        
+        {# 顯示後端傳來的錯誤訊息 #}
+        <div class="text-slate-600 text-sm mb-6 leading-relaxed bg-red-50 p-3 rounded-lg border border-red-100">
+            {% if form.non_field_errors %}
+                {% for error in form.non_field_errors %}
+                    <p class="font-medium text-red-700">{{ error }}</p>
+                {% endfor %}
+            {% else %}
+                <p>輸入的地址可能有誤，系統無法精確定位。<br>請檢查門牌號碼是否正確。</p>
+            {% endif %}
+        </div>
+
+        <button onclick="closeErrorModal()" 
+                class="w-full py-3 px-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-200 transition transform hover:-translate-y-0.5 focus:outline-none">
+            好的，我重新填寫
+        </button>
+    </div>
+</div>
+
+{# === [新增] 自動開啟 Modal 的 Script === #}
+<script>
+    // 定義關閉函式
+    function closeErrorModal() {
+        const modal = document.getElementById('error-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+    }
+
+    // 檢查是否有錯誤，若有則自動開啟
+    document.addEventListener('DOMContentLoaded', function() {
+        // Django Template 判斷是否有 non_field_errors
+        {% if form.non_field_errors %}
+            const errorModal = document.getElementById('error-modal');
+            if (errorModal) {
+                errorModal.classList.remove('hidden');
+            }
+        {% endif %}
+    });
+</script>
 
 {% endblock content %}
 
@@ -315,23 +391,4 @@
 <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 <script src="{% static 'core/js/estimation_handler.js' %}"></script>
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('estimation-form');
-        const loadingModal = document.getElementById('valuation-loading-modal');
-        
-        if (form && loadingModal) {
-            form.addEventListener('submit', function(e) {
-                loadingModal.classList.remove('hidden');
-                loadingModal.classList.add('animate-fade-in');
-                const submitBtn = form.querySelector('button[type="submit"]');
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.innerText = '計算中...';
-                    submitBtn.classList.add('opacity-75', 'cursor-not-allowed');
-                }
-            });
-        }
-    });
-</script>
 {% endblock %}

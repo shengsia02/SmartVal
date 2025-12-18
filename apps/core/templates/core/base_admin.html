@@ -7,17 +7,16 @@
     <script src="https://cdn.tailwindcss.com"></script>
     {% load static %}
     <link rel="stylesheet" href="{% static 'core/css/global.css' %}" />
+    <link rel="shortcut icon" type="image/png" href="{% static 'core/images/favicon.png' %}"/>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="bg-gray-100">
     <div class="flex">
         <aside
-            class="w-64 bg-gradient-to-b from-blue-600 to-blue-700 min-h-screen p-6 text-white sticky top-0 flex flex-col"
+            class="w-64 bg-gradient-to-b from-blue-600 to-blue-700 h-screen p-6 text-white sticky top-0 flex flex-col overflow-y-auto"
         >
             <div class="mb-8">
-                <a
-                    href="{% url 'core:dashboard_home' %}" class="flex items-center space-x-3 hover:opacity-80 transition"
-                >
+                <a href="{% url 'core:dashboard_home' %}" class="flex items-center space-x-3 hover:opacity-80 transition">
                     <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                     </svg>
@@ -101,6 +100,17 @@
                         </svg>
                         <span class="font-medium">買家列表</span>
                     </a>
+
+                    {# 【新增】這裡加入匯入頁面的連結 #}
+                    <a
+                        href="{% url 'core:import_data' %}"
+                        class="sidebar-link flex items-center space-x-3 p-3 rounded-lg hover:bg-white/10 transition {% if request.resolver_match.url_name == 'import_data' %}bg-white/20{% endif %}"
+                    >
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                        </svg>
+                        <span class="font-medium">批次資料匯入</span>
+                    </a>
                 </div>
             </nav>
 
@@ -165,5 +175,127 @@
     <script src="{% static 'core/js/utils.js' %}"></script>
     <script src="{% static 'core/js/global.js' %}"></script>
     {% block extra_js %}{% endblock %}
+
+    {# ========== 以下是新增的 WebSocket 全域通知功能 (請貼在 </body> 之前) ========== #}
+
+    {# 1. 全域懸浮通知視窗 (Toast) UI #}
+    <div id="global-toast" class="fixed bottom-5 right-5 z-[9999] transform transition-all duration-300 translate-y-20 opacity-0">
+        <div class="bg-white border-l-4 p-4 rounded shadow-2xl flex items-center gap-3 min-w-[300px]" id="toast-content">
+            <div id="toast-icon"></div>
+            <div class="flex-1">
+                <h4 id="toast-title" class="font-bold text-sm">通知</h4>
+                <p id="toast-message" class="text-xs text-gray-600 mt-1"></p>
+            </div>
+            <button onclick="hideToast()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    {# 2. WebSocket 連線與 Toast 控制腳本 #}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 自動判斷 ws 或 wss
+            const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            // 注意：這裡的路徑要對應 routing.py 的設定
+            const wsUrl = protocol + window.location.host + '/ws/notifications/';
+            
+            console.log("嘗試連線 WebSocket:", wsUrl);
+            
+            const notificationSocket = new WebSocket(wsUrl);
+
+            // 1. 頁面載入時，檢查是否正在處理中
+            if (sessionStorage.getItem('is_excel_processing') === 'true') {
+                setTimeout(() => {
+                    showToast('processing', 'Excel 正在背景處理中，請稍候...');
+                }, 500);
+            }
+
+            notificationSocket.onopen = function(e) {
+                console.log("✅ WebSocket 通知服務已連線");
+            };
+
+            // 【修正重點】所有的邏輯都要包在這個 function 裡面
+            notificationSocket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                console.log("收到 WebSocket 通知:", data);
+
+                // A. 清除處理中標記
+                if (data.status === 'success' || data.status === 'error') {
+                    sessionStorage.removeItem('is_excel_processing');
+                }
+                
+                // B. 顯示懸浮視窗
+                showToast(data.status, data.message);
+
+                // C. 【修正位置】收到成功訊號後，自動刷新頁面
+                // 必須寫在這裡面，才能讀取到 data 變數
+                if (data.status === 'success') {
+                    console.log("收到更新訊號，準備刷新...");
+                    
+                    setTimeout(() => {
+                        // 建議：加上判斷，只在列表頁或 Dashboard 刷新，避免干擾其他頁面
+                        const currentPath = window.location.pathname;
+                        if (currentPath.includes('house') || currentPath.includes('dashboard') || currentPath.includes('agent') || currentPath.includes('buyer')) {
+                            window.location.reload(); 
+                        }
+                    }, 1500);
+                }
+            }; // <--- 函式結束括號要在這裡
+
+            notificationSocket.onclose = function(e) {
+                console.warn("WebSocket 已斷線");
+            };
+
+            // --- Toast UI 控制函式 (讓全域皆可呼叫) ---
+            const toast = document.getElementById('global-toast');
+            const toastContent = document.getElementById('toast-content');
+            const toastIcon = document.getElementById('toast-icon');
+            const toastTitle = document.getElementById('toast-title');
+            const toastMessage = document.getElementById('toast-message');
+
+            function showToast(status, message) {
+                if (!toast) return;
+
+                // 1. 設定樣式 (根據狀態變色)
+                if (status === 'success') {
+                    toastContent.className = "bg-white border-l-4 border-green-500 p-4 rounded shadow-2xl flex items-center gap-3 min-w-[300px]";
+                    toastIcon.innerHTML = '<svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                    toastTitle.innerText = "處理完成";
+                    toastTitle.className = "font-bold text-sm text-green-800";
+                } else if (status === 'error') {
+                    toastContent.className = "bg-white border-l-4 border-red-500 p-4 rounded shadow-2xl flex items-center gap-3 min-w-[300px]";
+                    toastIcon.innerHTML = '<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+                    toastTitle.innerText = "處理失敗";
+                    toastTitle.className = "font-bold text-sm text-red-800";
+                } else {
+                    // Processing (處理中)
+                    toastContent.className = "bg-white border-l-4 border-blue-500 p-4 rounded shadow-2xl flex items-center gap-3 min-w-[300px]";
+                    toastIcon.innerHTML = '<svg class="w-6 h-6 text-blue-500 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>';
+                    toastTitle.innerText = "系統處理中";
+                    toastTitle.className = "font-bold text-sm text-blue-800";
+                }
+
+                // 2. 設定內容
+                toastMessage.innerText = message;
+
+                // 3. 顯示動畫 (滑入)
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                
+                // 4. 自動隱藏 (成功或失敗時 5秒後消失，處理中則不消失)
+                if (status !== 'processing') {
+                    setTimeout(hideToast, 5000);
+                }
+            }
+
+            function hideToast() {
+                if (toast) toast.classList.add('translate-y-20', 'opacity-0');
+            }
+            
+            // 將 showToast 設為全域函式，讓其他頁面 (如 dashboard_home) 也能呼叫
+            window.showToast = showToast;
+            window.hideToast = hideToast;
+        });
+    </script>
 </body>
 </html>

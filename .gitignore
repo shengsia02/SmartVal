@@ -2,7 +2,6 @@ venv
 .env
 client_secret_264283973358-cqal8kg34orhbcu6lhag7u0fm145mtip.apps.googleusercontent.com.json
 Notes.txt
-data_test.xlsx
-data.csv
-data.xlsx
 tree_structure.txt
+data
+*.sqlite3

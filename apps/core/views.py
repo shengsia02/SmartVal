@@ -8,10 +8,21 @@ from django.urls import reverse
 from django.http import Http404
 from django.contrib import messages # 用來顯示 "請先登入" 的訊息
 
+# 引入 Celery 相關
+from celery.result import AsyncResult
+from .tasks import predict_house_price
+
 # 引入你的 Form, Service 和 Model
 from .forms import EstimationForm, city_districts
 from .services import HousePriceService
 from .models import ValuationRecord
+
+from django.db.models import Count
+from django.utils import timezone
+from datetime import timedelta
+import json
+
+from apps.house.models import House, Agent, Buyer
 
 # ==========================================
 # Helper Function: 遞迴將所有 Decimal 轉為 float
@@ -31,64 +42,115 @@ def convert_decimal_to_float(data):
         return data
 
 # ==========================================
-# 1. 首頁 View
+# 1. 首頁 View (修改為非同步派發)
 # ==========================================
 class HomeView(FormView):
     template_name = 'core/home.html'
     form_class = EstimationForm
 
     def post(self, request, *args, **kwargs):
+        # 1. 權限檢查
         if not request.user.is_authenticated:
+            # 如果是 AJAX 請求 (Fetch)，回傳 401 JSON 讓前端導向
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                login_url = f"{reverse('account_login')}?next={request.path}"
+                return JsonResponse({'status': 'redirect', 'url': login_url}, status=401)
+            
             messages.warning(request, "請先登入會員，才能進行房屋估價。")
             return redirect(f"{reverse('account_login')}?next={request.path}")
+            
         return super().post(request, *args, **kwargs)
 
     def form_valid(self, form):
+        # 2. 準備資料
         cleaned_data = form.cleaned_data
         
-        try:
-            # 2. 呼叫 Service 進行預測
-            raw_result = HousePriceService.predict(cleaned_data)
+        # 為了避免 Celery JSON 序列化錯誤，先將 Decimal 轉為 float/str
+        serializable_data = convert_decimal_to_float(cleaned_data)
+        
+        # 手動確保特定欄位格式 (與原本邏輯一致)
+        input_data = {
+            'city': serializable_data.get('city'),
+            'town': serializable_data.get('town'),
+            'street': serializable_data.get('street'),
+            'house_type': str(serializable_data.get('house_type')),
+            'house_age': float(serializable_data.get('house_age') or 0),
+            'total_floors': float(serializable_data.get('total_floors') or 0),
+            'floor_number': float(serializable_data.get('floor_number') or 0),
+            'floor_area': float(serializable_data.get('floor_area') or 0),
+            'land_area': float(serializable_data.get('land_area') or 0),
+            'room_count': int(serializable_data.get('room_count') or 0),
+        }
+
+        # 3. [關鍵修改] 派發 Celery 任務
+        task = predict_house_price.delay(input_data)
+
+        # 4. 回傳 task_id 給前端
+        return JsonResponse({
+            'task_id': task.id,
+            'status': 'processing',
+            'msg': '估價計算中...'
+        })
+
+    def form_invalid(self, form):
+        # 如果表單驗證失敗，且是 AJAX 請求，回傳 JSON 錯誤
+        if self.request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({
+                'status': 'validation_error',
+                'errors': form.errors
+            }, status=400)
+        return super().form_invalid(form)
+
+
+# ==========================================
+# [新增] 任務狀態查詢 View
+# ==========================================
+class TaskStatusView(LoginRequiredMixin, View):
+    def get(self, request, task_id):
+        result = AsyncResult(task_id)
+        
+        response_data = {
+            'task_id': task_id,
+            'state': result.state,
+        }
+
+        if result.state == 'SUCCESS':
+            task_result = result.result # tasks.py 回傳的字典
             
-            if raw_result:
-                # ==========================================
-                # [FIX - 終極版] 使用遞迴函式清洗所有資料
-                # ==========================================
-                # 不再手動指定欄位，直接把整個字典丟進去洗
-                result = convert_decimal_to_float(raw_result)
+            # 【通用化修改】檢查這是哪種任務的回傳
+            
+            # A. 估價任務 (有 'input_data' 欄位)
+            if isinstance(task_result, dict) and 'input_data' in task_result:
+                if task_result.get('status') == 'success':
+                    # ... (原本的 session 處理邏輯) ...
+                    safe_result = convert_decimal_to_float(task_result['data'])
+                    safe_input = convert_decimal_to_float(task_result['input_data'])
+                    request.session['valuation_result'] = safe_result
+                    request.session['valuation_input'] = safe_input
+                    
+                    response_data['status'] = 'completed'
+                    response_data['redirect_url'] = reverse('core:valuation_result')
+                else:
+                    response_data['state'] = 'FAILURE'
+                    response_data['error'] = task_result['data'].get('error', '未知錯誤')
 
-                # A. 準備輸入條件 (這裡手動轉也行，或是一樣用 convert_decimal_to_float)
-                input_data = {
-                    'city': cleaned_data.get('city'),
-                    'town': cleaned_data.get('town'),
-                    'street': cleaned_data.get('street'),
-                    'house_type': str(cleaned_data.get('house_type')),
-                    'house_age': float(cleaned_data.get('house_age') or 0),
-                    'total_floors': float(cleaned_data.get('total_floors') or 0),
-                    'floor_number': float(cleaned_data.get('floor_number') or 0),
-                    'floor_area': float(cleaned_data.get('floor_area') or 0),
-                    'land_area': float(cleaned_data.get('land_area') or 0),
-                    'room_count': int(cleaned_data.get('room_count') or 0),
-                }
-
-                # B. 存入 Session
-                self.request.session['valuation_result'] = result
-                self.request.session['valuation_input'] = input_data
-                
-                # C. 跳轉到結果頁
-                return redirect('core:valuation_result')
-
+            # B. Excel 匯入任務 (有 'message' 欄位，沒有 input_data)
+            elif isinstance(task_result, dict) and 'message' in task_result:
+                if task_result.get('status') == 'success':
+                    response_data['status'] = 'completed'
+                    response_data['message'] = task_result.get('message')
+                else:
+                    response_data['state'] = 'FAILURE'
+                    response_data['error'] = task_result.get('error')
+            
+            # C. 其他未知任務
             else:
-                form.add_error(None, "無法進行估價，請檢查地址是否正確。")
-                return self.form_invalid(form)
+                response_data['data'] = task_result # 直接回傳原本結果
 
-        except Exception as e:
-            # 建議保留 print 以便在 console 看到非預期的錯誤
-            print(f"Error in HomeView: {e}")
-            import traceback
-            traceback.print_exc() 
-            form.add_error(None, "系統發生錯誤，請稍後再試。")
-            return self.form_invalid(form)
+        elif result.state == 'FAILURE':
+            response_data['error'] = str(result.result)
+        
+        return JsonResponse(response_data)
 
 # ==========================================
 # 2. 結果頁 View (從 Session 讀取並顯示)
@@ -263,18 +325,79 @@ class RemoveFavoriteView(LoginRequiredMixin, View):
                 messages.error(request, "發生錯誤，無法移除")
                 return redirect('core:favorite_list')
 
-# ==========================================
-# 6. 其他既有功能 (Dashboard, Ajax) - 保留原樣
-# ==========================================
 
+# ==========================================
+# [修改] 儀表板首頁 View (增加數據統計)
+# ==========================================
 class DashboardHomeView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'core/dashboard_home.html'
     login_url = 'account_login' 
+    
     def test_func(self):
         return self.request.user.is_staff
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # --- 1. KPI 核心指標 ---
+        # 統計各個 Model 的總數量
+        context['total_houses'] = House.objects.count()
+        context['total_agents'] = Agent.objects.count()
+        context['total_buyers'] = Buyer.objects.count()
+        
+        # 統計「本月估價次數」 (反映系統活躍度)
+        # 使用 ValuationRecord 來代表使用者的估價行為
+        now = timezone.now()
+        context['estimates_this_month'] = ValuationRecord.objects.filter(
+            created_at__year=now.year, 
+            created_at__month=now.month
+        ).count()
+
+        # --- 2. 圖表資料：近 7 天估價流量趨勢 (Line Chart) ---
+        dates = []
+        traffic_data = []
+        today = now.date()
+        
+        # 倒推 7 天
+        for i in range(6, -1, -1):
+            date_cursor = today - timedelta(days=i)
+            dates.append(date_cursor.strftime('%m/%d')) # 格式化日期為 "12/17"
+            
+            # 查詢當天的估價紀錄數量
+            count = ValuationRecord.objects.filter(
+                created_at__date=date_cursor
+            ).count()
+            traffic_data.append(count)
+            
+        # 轉為 JSON 字串傳給前端 JS
+        context['chart_dates'] = json.dumps(dates)
+        context['chart_traffic'] = json.dumps(traffic_data)
+
+        # --- 3. 圖表資料：房屋物件區域分佈 Top 5 (Doughnut Chart) ---
+        top_cities = House.objects.values('city').annotate(
+            count=Count('id')
+        ).order_by('-count')[:5]
+        
+        area_labels = [item['city'] for item in top_cities]
+        area_data = [item['count'] for item in top_cities]
+        
+        context['area_labels'] = json.dumps(area_labels)
+        context['area_data'] = json.dumps(area_data)
+
+        return context
+
+# ==========================================
+# 6. 其他既有功能 (Dashboard, Ajax) - 保留原樣
+# ==========================================
 def get_towns_ajax(request):
     city_name = request.GET.get('city')
     if city_name and city_name in city_districts:
         return JsonResponse({'towns': city_districts[city_name]}, status=200)
     return JsonResponse({'towns': []}, status=200)
+
+class DataImportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'core/import_data.html' # 我們等下建立這個檔案
+    login_url = 'account_login'
+
+    def test_func(self):
+        return self.request.user.is_staff

@@ -38,15 +38,18 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 ¢x  ¢x  forms.py
 ¢x  ¢x  models.py
 ¢x  ¢x  services.py
+¢x  ¢x  tasks.py
 ¢x  ¢x  tests.py
 ¢x  ¢x  urls.py
 ¢x  ¢x  views.py
 ¢x  ¢x  __init__.py
 ¢x  ¢x  
 ¢x  ¢u¢wmigrations
+¢x  ¢x  ¢x  0001_initial.py
 ¢x  ¢x  ¢x  __init__.py
 ¢x  ¢x  ¢x  
 ¢x  ¢x  ¢|¢w__pycache__
+¢x  ¢x          0001_initial.cpython-310.pyc
 ¢x  ¢x          __init__.cpython-310.pyc
 ¢x  ¢x          
 ¢x  ¢u¢wml_models
@@ -70,7 +73,9 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 ¢x  ¢x          base_admin.html
 ¢x  ¢x          base_public.html
 ¢x  ¢x          dashboard_home.html
+¢x  ¢x          favorite_list.html
 ¢x  ¢x          home.html
+¢x  ¢x          result.html
 ¢x  ¢x          
 ¢x  ¢|¢w__pycache__
 ¢x          admin.cpython-310.pyc
@@ -78,6 +83,7 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 ¢x          forms.cpython-310.pyc
 ¢x          models.cpython-310.pyc
 ¢x          services.cpython-310.pyc
+¢x          tasks.cpython-310.pyc
 ¢x          urls.cpython-310.pyc
 ¢x          views.cpython-310.pyc
 ¢x          __init__.cpython-310.pyc
@@ -202,6 +208,24 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\CONFIG
         __init__.cpython-310.pyc
         __init__.cpython-311.pyc
         
+Folder PATH listing for volume Acer
+Volume serial number is 640B-D921
+C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\DATA
+    data - Copy (10).xlsx
+    data - Copy (2).xlsx
+    data - Copy (3).xlsx
+    data - Copy (4).xlsx
+    data - Copy (5).xlsx
+    data - Copy (6).xlsx
+    data - Copy (7).xlsx
+    data - Copy (8).xlsx
+    data - Copy (9).xlsx
+    data - Copy.xlsx
+    data.xlsx
+    data_test.xlsx
+    
+No subfolders exist 
+
 Folder PATH listing for volume Acer
 Volume serial number is 640B-D921
 C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\EXTRA_CLASS
@@ -780,12 +804,18 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\STATICFILES
 ¢x  ¢x      global.a40b5e5c853d.css.gz
 ¢x  ¢x      global.css
 ¢x  ¢x      global.css.gz
+¢x  ¢x      global.f53cc098ca40.css
+¢x  ¢x      global.f53cc098ca40.css.gz
 ¢x  ¢x      
 ¢x  ¢u¢wimages
 ¢x  ¢x      background_ntpu.8132873b0020.jpg
 ¢x  ¢x      background_ntpu.jpg
 ¢x  ¢x      
 ¢x  ¢|¢wjs
+¢x          estimation_handler.1617be3ffa1f.js
+¢x          estimation_handler.1617be3ffa1f.js.gz
+¢x          estimation_handler.62417ebb9f7a.js
+¢x          estimation_handler.62417ebb9f7a.js.gz
 ¢x          estimation_handler.96f195ecedea.js
 ¢x          estimation_handler.96f195ecedea.js.gz
 ¢x          estimation_handler.ed0b91360c93.js

@@ -65,10 +65,10 @@ city_districts = {
     ],
     '金門縣': [
         '金城鎮', '金湖鎮', '金沙鎮', '金寧鄉', '烈嶼鄉', '烏坵鄉'
-    ],
-    '連江縣': [
-        '南竿鄉', '北竿鄉', '莒光鄉', '東引鄉'
     ]
+    # '連江縣': [
+    #     '南竿鄉', '北竿鄉', '莒光鄉', '東引鄉'
+    # ]
 }
 
 # 動態產生縣市 Choice
@@ -114,6 +114,7 @@ class EstimationForm(forms.Form):
     # 屋齡 (數字輸入，保持不變)
     house_age = forms.DecimalField(
         label="屋齡 (年)",
+        min_value=1,
         max_digits=10, 
         decimal_places=2, 
         widget=forms.NumberInput(attrs={'placeholder': '例如：1.23'})
@@ -122,6 +123,7 @@ class EstimationForm(forms.Form):
     # 建坪 (數字輸入，保持不變)
     floor_area = forms.DecimalField(
         label="建坪 (含公設，不含車位)",
+        min_value=1,
         max_digits=10, 
         decimal_places=2, 
         widget=forms.NumberInput(attrs={'placeholder': '例如：30.5'})
@@ -130,6 +132,7 @@ class EstimationForm(forms.Form):
     # 地坪 (數字輸入，保持不變)
     land_area = forms.DecimalField(
         label="地坪",
+        min_value=1,
         max_digits=10, 
         decimal_places=2, 
         widget=forms.NumberInput(attrs={'placeholder': '例如：8.2'})

@@ -7,6 +7,9 @@ app_name = 'core'
 urlpatterns = [
     # 前台主頁 (輸入表單)
     path('', views.HomeView.as_view(), name='home'),
+
+    # [新增] 任務狀態查詢
+    path('task-status/<str:task_id>/', views.TaskStatusView.as_view(), name='task_status'),
     
     # 【新增】估價結果頁
     path('result/', views.ValuationResultView.as_view(), name='valuation_result'),
@@ -16,6 +19,9 @@ urlpatterns = [
     
     # 後台首頁
     path('dashboard/', views.DashboardHomeView.as_view(), name='dashboard_home'),
+
+    # 【新增】獨立的匯入頁面路徑
+    path('dashboard/import/', views.DataImportView.as_view(), name='import_data'),
     
     # AJAX 行政區連動
     path('ajax/get_towns/', views.get_towns_ajax, name='get_towns_ajax'),
