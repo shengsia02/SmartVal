@@ -23,6 +23,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.core.files.storage import default_storage # 新增這個
 from django.core.files.base import ContentFile # 新增這個
 from .tasks import import_excel_task # 新增這個
+import base64
 
 import os
 from django.conf import settings
@@ -476,19 +477,22 @@ class ExcelUploadView(LoginRequiredMixin, UserPassesTestMixin, View):
         excel_file = request.FILES['file']
         
         try:
-            # 2. 將檔案暫存到伺服器 (因為 Celery 只能讀路徑，不能讀記憶體物件)
-            # 使用 default_storage 會存到 media root 下
-            tmp_dir = os.path.join(settings.MEDIA_ROOT, 'tmp')
-            os.makedirs(tmp_dir, exist_ok=True)
-            file_path = default_storage.save(f"tmp/{excel_file.name}", ContentFile(excel_file.read()))
+            # === 修改開始：改用 Base64 傳送內容 ===
             
-            # 取得絕對路徑 (如果是本地開發)
-            full_path = default_storage.path(file_path)
+            # 1. 讀取檔案的二進位內容
+            file_content = excel_file.read()
+            
+            # 2. 轉成 base64 字串 (因為 Redis 只能傳送文字，不能直接傳 binary)
+            # decode('utf-8') 是為了把 bytes 轉成 string
+            file_content_b64 = base64.b64encode(file_content).decode('utf-8')
 
             # 3. 呼叫 Celery Task
-            task = import_excel_task.delay(full_path, request.user.id)
+            # 注意：我們傳送的是「內容字串」，不再是「路徑」
+            # 我們也把檔名傳過去，方便 logging 辨識
+            task = import_excel_task.delay(file_content_b64, request.user.id, filename=excel_file.name)
 
-            # 4. 馬上回傳 Task ID，不等待處理結果
+            # === 修改結束 ===
+
             return JsonResponse({
                 'success': True, 
                 'task_id': task.id,

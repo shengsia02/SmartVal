@@ -1,5 +1,5 @@
 # apps/house/tasks.py
-import os
+import os, base64, io
 import pandas as pd
 from decimal import Decimal
 from celery import shared_task
@@ -8,13 +8,15 @@ from django.core.exceptions import ValidationError
 from channels.layers import get_channel_layer # 新增
 from asgiref.sync import async_to_sync # 新增
 from .models import House, Agent, Buyer
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 @shared_task
-def import_excel_task(file_path, user_id):
+def import_excel_task(file_content_b64, user_id, filename='uploaded_file.xlsx'):
     """
-    背景執行 Excel 匯入任務，並透過 WebSocket 通知特定使用者
+    背景執行 Excel 匯入任務 (Base64 版本)
     """
-    # 準備 WebSocket 推播工具
     channel_layer = get_channel_layer()
     group_name = f"user_{user_id}"
 
@@ -23,20 +25,30 @@ def import_excel_task(file_path, user_id):
         async_to_sync(channel_layer.group_send)(
             group_name,
             {
-                'type': 'task_message', # 對應 Consumer 的 task_message 方法
+                'type': 'task_message',
                 'status': status,
                 'message': message
             }
         )
 
     try:
-        # 1. 讀取 Excel (從路徑)
+        # === 修改重點開始：記憶體內讀取檔案 ===
         try:
-            xls = pd.read_excel(file_path, sheet_name=None)
+            # 2. 解碼 Base64 字串回二進位數據
+            file_content = base64.b64decode(file_content_b64)
+            
+            # 3. 使用 BytesIO 轉成類檔案物件 (File-like object)
+            # 這樣 pandas 就可以直接讀它，不需要實際存在硬碟上
+            excel_file = io.BytesIO(file_content)
+            
+            # 4. pandas 讀取 (注意這裡傳的是 excel_file 物件，不是路徑)
+            xls = pd.read_excel(excel_file, sheet_name=None)
+            
         except Exception as e:
             return {'status': 'error', 'error': f'無法讀取 Excel 檔案: {str(e)}'}
+        # === 修改重點結束 ===
 
-        # 2. 檢查工作表
+        # 5. 檢查工作表 (邏輯保持不變)
         required_sheets = ['仲介', '買家', '房屋']
         for sheet_name in required_sheets:
             if sheet_name not in xls:
@@ -234,7 +246,3 @@ def import_excel_task(file_path, user_id):
         send_notification('error', error_msg)
         return {'status': 'error', 'error': error_msg}
     
-    finally:
-        # [重要] 任務結束後，刪除暫存檔案以釋放空間
-        if os.path.exists(file_path):
-            os.remove(file_path)
