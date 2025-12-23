@@ -1,0 +1,114 @@
+{# 【!! 修改處 1：改為繼承 base_public !!】 #}
+{% extends "core/base_public.html" %}
+{% load socialaccount %}
+
+{% block title %}登入 - SmartVal{% endblock %} 
+
+{% block content %}
+    {# 【!! 修改處 2：加入背景色與高度設定，讓卡片在前台版面中更凸顯 !!】 #}
+    <div class="w-full min-h-[calc(100vh-12rem)] flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      
+      <div class="max-w-md w-full space-y-8">
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
+          
+          {# 標題區塊 #}
+          <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-6">
+            <h3 class="text-center text-2xl font-bold text-white tracking-wide">會員登入</h3>
+            <p class="text-center text-blue-100 text-sm mt-2">歡迎回到 SmartVal</p>
+          </div>
+
+          <div class="p-8">
+            <div class="mb-6">
+              <a
+                href="{% provider_login_url 'google' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}"
+                class="w-full bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-semibold py-3 px-4 rounded-lg transition duration-200 flex items-center justify-center shadow-sm group"
+              >
+                <svg class="w-5 h-5 mr-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                <span class="group-hover:text-gray-900">使用 Google 帳號登入</span>
+              </a>
+            </div>
+      
+            <div class="relative my-6">
+                <div class="absolute inset-0 flex items-center">
+                    <div class="w-full border-t border-gray-300"></div>
+                </div>
+                <div class="relative flex justify-center text-sm">
+                    <span class="px-2 bg-white text-gray-500">或使用 Email 登入</span>
+                </div>
+            </div>
+      
+            <form method="post" class="space-y-6">
+              {% csrf_token %}
+      
+              <div>
+                <label for="id_login" class="block text-sm font-medium text-gray-700 mb-1">
+                  帳號 (Email 或使用者名稱)
+                </label>
+                <input
+                  type="text"
+                  name="login"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  id="id_login"
+                  placeholder="請輸入帳號"
+                  required
+                />
+              </div>
+      
+              <div>
+                <label for="id_password" class="block text-sm font-medium text-gray-700 mb-1">
+                  密碼
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  id="id_password"
+                  placeholder="請輸入密碼"
+                  required
+                />
+              </div>
+      
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <input
+                    type="checkbox"
+                    name="remember"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    id="id_remember"
+                  />
+                  <label class="ml-2 block text-sm text-gray-900" for="id_remember">記住我</label>
+                </div>
+                
+                <div class="text-sm">
+                    <a href="{% url 'account_reset_password' %}" class="font-medium text-blue-600 hover:text-blue-500">
+                        忘記密碼?
+                    </a>
+                </div>
+              </div>
+      
+              <button
+                type="submit"
+                class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                立即登入
+              </button>
+            </form>
+      
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600">
+                    還沒有帳號?
+                    <a href="{% url 'account_signup' %}" class="font-medium text-blue-600 hover:text-blue-500">
+                        免費註冊
+                    </a>
+                </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+{% endblock %}

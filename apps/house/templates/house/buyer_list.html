@@ -4,6 +4,7 @@
 {% block title %}買家列表 - {{ total_count }} 筆資料{% endblock %}
 
 {% block extra_css %}
+  <link rel="stylesheet" href="{% static 'house/css/websocket_style.css' %}">
 {% endblock %}
 
 
@@ -18,11 +19,9 @@
     </button>
   </div>
 
-  <!-- 【!! 重大新增 !!】 搜尋表單 (已加大樣式) -->
   <form method="GET" action="{% url 'house:buyer_list' %}" class="mb-6 p-6 bg-white rounded-lg shadow-sm">
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       
-      <!-- 搜尋欄 (放大到 2 欄) -->
       <div class="md:col-span-2">
         <label for="search-q" class="block text-base font-medium text-slate-700">搜尋買家姓名</label>
         <input type="search" name="q" id="search-q" value="{{ current_q|default:'' }}"
@@ -30,7 +29,6 @@
                class="mt-1 block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base py-2.5 px-3">
       </div>
       
-      <!-- 按鈕 -->
       <div class="md:col-span-1 flex items-end space-x-2">
         <button type="submit" class="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2.5 text-base font-medium text-white shadow-sm hover:bg-blue-700">
           搜尋
@@ -41,7 +39,6 @@
       </div>
     </div>
   </form>
-  <!-- 【!! 新增結束 !!】 -->
 
 
   {% if buyers %}
@@ -73,7 +70,6 @@
         </tbody>
       </table>
       
-      <!-- 【!! 修改 !!】 分頁按鈕加入搜尋參數 -->
       {% if buyers.has_other_pages %}
         {% with q=current_q|default:'' %}
         <nav class="flex items-center justify-between border-t border-slate-200 bg-white px-4 py-3 sm:px-6 rounded-b-lg">
@@ -89,7 +85,6 @@
             </p>
           </div>
           <div class="flex flex-1 justify-between sm:justify-end items-center gap-2">
-            <!-- 上一頁 -->
             {% if buyers.has_previous %}
               <a href="?page={{ buyers.previous_page_number }}&amp;q={{ q }}" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                 上一頁
@@ -100,7 +95,6 @@
               </span>
             {% endif %}
             
-            <!-- 頁碼輸入 -->
             <div class="text-sm text-slate-700">
               <input type="number" name="page" min="1" max="{{ buyers.paginator.num_pages }}" 
                      value="{{ buyers.number }}" 
@@ -111,7 +105,6 @@
               <span>{{ buyers.paginator.num_pages }}</span> 頁
             </div>
             
-            <!-- 下一頁 -->
             {% if buyers.has_next %}
               <a href="?page={{ buyers.next_page_number }}&amp;q={{ q }}" class="relative inline-flex items-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
                 下一頁
@@ -139,7 +132,6 @@
     </div>
   {% endif %}
 
-  <!-- ... (Modal HTML 保持不變) ... -->
   <div id="buyer-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
     <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full max-h-[90vh] overflow-y-auto transform transition-all">
       <div id="modal-header" class="px-6 py-4 flex items-center justify-between rounded-t-2xl sticky top-0 z-10">
@@ -172,8 +164,8 @@
 
 
 {% block extra_js %}
-  {% load static %}
   <script src="{% static 'house/js/list_page_handler.js' %}"></script>
+  <script src="{% static 'house/js/websocket_base.js' %}"></script>
   
   <script>
     document.addEventListener("DOMContentLoaded", function () {
@@ -206,7 +198,6 @@
         row_id_prefix: 'buyer-row-' 
       });
 
-      // 【!! 修改 !!】 JS 跳轉邏輯保持不變
       const pageInput = document.getElementById('page-jump-input');
       if (pageInput) {
         pageInput.addEventListener('keypress', function(e) {
@@ -227,4 +218,28 @@
 
     });
   </script>
+
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          setupWebSocket('buyers', 'buyer_update', '買家');
+
+          // 【新增】
+          const form = document.getElementById('buyer-form');
+          if (form) {
+              form.addEventListener('submit', function() {
+                  markAsMyUpdate();
+              });
+          }
+          // 3. 【新增這段】監聽列表中的所有「刪除」表單
+          // 因為刪除按鈕有很多個（每一行都有），所以要用 querySelectorAll 抓全部
+          const deleteForms = document.querySelectorAll('.delete-form');
+          deleteForms.forEach(function(deleteForm) {
+              deleteForm.addEventListener('submit', function() {
+                  // 當按下刪除確認後，標記「這是我做的更新」
+                  markAsMyUpdate(); 
+              });
+          });
+      });
+  </script>
+
 {% endblock %}

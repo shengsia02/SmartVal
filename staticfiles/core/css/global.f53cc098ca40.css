@@ -1,0 +1,183 @@
+/* apps/core/static/core/css/global.css */
+/* 全域樣式 - 所有頁面共用 */
+
+/* 側邊欄連結樣式 */
+.sidebar-link {
+  transition: all 0.2s ease-in-out;
+}
+
+/* 頁面滾動時平滑效果 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 自訂捲軸樣式 (Webkit 瀏覽器) */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+
+/* ---------------------------------------------------- */
+/* 公共背景圖設定 */
+/* ---------------------------------------------------- */
+/* 【!! 修正處 2：將 fixed 相關屬性全部移除 !!】 */
+.background-image-wrapper { 
+background-image: url("../images/background_ntpu.8132873b0020.jpg") !important;
+
+background-size: cover !important;
+background-attachment: scroll !important; /* 讓圖片隨內容滾動 */
+background-position: center center !important;
+
+/* 移除：position, top, left, width, height, z-index */
+min-height: 1px; /* 移除高度限制，讓 home.html 控制 */
+}
+
+/* ---------------------------------------------------- */
+/* 地圖容器設定 */
+/* ---------------------------------------------------- */
+#map {
+  height: 400px; /* Leaflet 必須設定明確高度 */
+  width: 100%;
+  border-radius: 0.5rem;
+}
+
+/* ---------------------------------------------------- */
+/* 地圖標記聚合樣式 - 紅色醒目主題 */
+/* ---------------------------------------------------- */
+/* 移除外層背景，只保留內層數字圓圈 */
+#map .marker-cluster-small,
+#map .marker-cluster-medium,
+#map .marker-cluster-large,
+.leaflet-marker-icon.marker-cluster {
+  background-color: transparent !important; /* 外層透明 */
+  border: none !important; /* 移除外層邊框 */
+}
+
+/* 聚合圓圈內部數字區域 - 這才是真正顯示的圓圈 */
+#map .marker-cluster-small div,
+#map .marker-cluster-medium div,
+#map .marker-cluster-large div,
+.marker-cluster div {
+  background-color: rgb(220, 38, 38) !important; /* 深紅色 */
+  color: white !important;
+  font-weight: bold !important;
+  font-size: 14px !important;
+  line-height: 1.5 !important;
+  border: 3px solid white !important; /* 白色邊框讓圓圈更醒目 */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3) !important; /* 陰影效果 */
+}
+
+/* Hover 效果 - 移除 transform 以避免座標錯亂 */
+#map .marker-cluster:hover div {
+  opacity: 0.85 !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s ease !important;
+}
+
+/* 確保圓形 */
+#map .marker-cluster {
+  border-radius: 50% !important;
+}
+
+/* ---------------------------------------------------- */
+/* 表單卡片透明度設定 */
+/* ---------------------------------------------------- */
+.form-card {
+/* 設定白色背景並稍微透明 (0.95) */
+background-color: rgba(255, 255, 255, 0.75); 
+backdrop-filter: blur(5px);
+}
+
+/* ---------------------------------------------------- */
+/* [修改] 客製化表單驗證錯誤樣式 - 紅色泡泡風格 */
+/* ---------------------------------------------------- */
+
+/* 錯誤輸入框的狀態 (維持紅色邊框，但移除過重的陰影，讓焦點在泡泡上) */
+.input-error {
+    border-color: #dc2626 !important; /* Tailwind red-600 更深一點的紅 */
+    background-color: #fef2f2 !important; /* Tailwind red-50 淡紅背景 */
+}
+
+/* 錯誤訊息「泡泡」本體 */
+.validation-bubble {
+    position: absolute;
+    /* 定位在輸入框的正上方，並留一點距離 */
+    bottom: calc(100% + 12px); 
+    left: 0;
+    z-index: 50; /* 確保浮在最上層 */
+    
+    /* 泡泡樣式 */
+    background-color: #fff; /* 白底 */
+    border: 1px solid #dc2626; /* 紅框 */
+    color: #dc2626; /* 紅字 */
+    padding: 0.5rem 0.75rem; /* 內距 */
+    border-radius: 0.5rem; /* 圓角 */
+    font-size: 0.85rem; /* 字體大小 */
+    font-weight: 500;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* 陰影增加立體感 */
+    white-space: nowrap; /* 避免文字折行 */
+    
+    /* 動畫 */
+    animation: popIn 0.2s ease-out forwards;
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+}
+
+/* 泡泡出現的動畫效果 */
+@keyframes popIn {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* 繪製泡泡下方的小三角形箭頭 (外層紅框) */
+.validation-bubble::after {
+    content: '';
+    position: absolute;
+    top: 100%; /* 接在泡泡底部 */
+    left: 1.5rem; /* 箭頭的水平位置 */
+    border-width: 8px;
+    border-style: solid;
+    /* 上邊框紅色，其他透明 -> 形成向下紅三角形 */
+    border-color: #dc2626 transparent transparent transparent; 
+}
+
+/* 繪製泡泡下方的小三角形箭頭 (內層白色，用來蓋住紅框，製造空心感) */
+.validation-bubble::before {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: calc(1.5rem + 1px); /* 稍微偏移以配合邊框寬度 */
+    border-width: 7px;
+    border-style: solid;
+    /* 上邊框白色，其他透明 -> 形成向下白三角形蓋在紅三角形上 */
+    border-color: #fff transparent transparent transparent; 
+    z-index: 1;
+}
+
+/* ---------------------------------------------------- */
+/* [新增] Modal 彈出動畫 */
+/* ---------------------------------------------------- */
+@keyframes bounceIn {
+    0% { opacity: 0; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.03); }
+    100% { transform: scale(1); }
+}
+
+.animate-bounce-in {
+    animation: bounceIn 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+}

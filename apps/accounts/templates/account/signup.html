@@ -1,0 +1,96 @@
+{# 【!! 修改處 1：改為繼承 base_public !!】 #}
+{% extends "core/base_public.html" %}
+{% load i18n static widget_tweaks %}
+
+{% block title %}註冊 - SmartVal{% endblock %}
+
+{% block content %}
+<div class="w-full min-h-[calc(100vh-12rem)] flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    
+    <div class="max-w-md w-full">
+        <div class="bg-white shadow-xl rounded-2xl overflow-hidden">
+            
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-6">
+                <h3 class="text-center text-2xl font-bold text-white tracking-wide">
+                    創建新帳號
+                </h3>
+                <p class="text-center text-blue-100 text-sm mt-2">加入 SmartVal 開始智能估價</p>
+            </div>
+
+            <div class="p-8">
+                <form method="post" action="{% url 'account_signup' %}" class="space-y-5">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded" role="alert">
+                            {% for error in form.non_field_errors %}
+                                <p class="text-sm">{{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+
+                    {% for field in form %}
+                        {% if field.is_hidden %}
+                            {{ field }}
+                        {% else %}
+                            <div class="space-y-1">
+                                <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700">
+                                    {{ field.label }}
+                                </label>
+                                
+                                {{ field|add_class:"w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" }}
+
+                                {% if field.errors %}
+                                    <p class="text-sm text-red-600 mt-1">{{ field.errors.as_text }}</p>
+                                {% endif %}
+                                {% if field.help_text %}
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        {{ field.help_text|safe }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if redirect_field_value %}
+                        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+                    {% endif %}
+
+                    <button 
+                        type="submit" 
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors mt-6"
+                    >
+                        註冊帳號
+                    </button>
+                </form>
+
+                <div class="mt-6 text-center border-t border-gray-200 pt-6">
+                    <p class="text-sm text-gray-600">
+                        已經有帳號了嗎？
+                        <a href="{% url 'account_login' %}{% if request.GET.next %}?next={{ request.GET.next }}{% endif %}" class="font-medium text-blue-600 hover:text-blue-500">
+                            立即登入
+                        </a>
+                    </p>
+                </div>
+                
+                {% if socialaccount.providers %}
+                <div class="mt-6">
+                    <div class="relative">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-2 bg-white text-gray-500">或使用第三方帳號</span>
+                        </div>
+                    </div>
+                    <div class="mt-6">
+                        {% include "socialaccount/snippets/provider_list.html" with process="signup" %}
+                    </div>
+                </div>
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}

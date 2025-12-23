@@ -1,18 +1,12 @@
 from django.contrib import admin
-from .models import House, HouseDetail, Agent, Buyer
+from .models import House, Agent, Buyer
 
 @admin.register(House)
 class HouseAdmin(admin.ModelAdmin):
-    list_display = ('address', 'house_type', 'total_price', 'buyers', 'agent', 'created_at')
-    list_filter = ('house_type', 'agent', 'buyers',)
-    search_fields = ('house_type', 'agent', 'buyers',)
-    ordering = ('-total_price',)
-
-@admin.register(HouseDetail)
-class HouseDetailAdmin(admin.ModelAdmin):
-    list_display = ('city', 'town', 'house_age', 'floor_area', 'land_area', 'unit_price', 'sold_time')
-    list_filter = ('city', 'town',)
-    search_fields = ('city', 'town',)
+    list_display = ('address', 'house_type', 'total_price', 'city', 'town', 'agent', 'created_at',)
+    list_filter = ('house_type', 'city',)
+    search_fields = ('address', 'city', 'town', 'house_type',)
+    ordering = ('-created_at', '-total_price',)
 
 @admin.register(Agent)
 class AgentAdmin(admin.ModelAdmin):

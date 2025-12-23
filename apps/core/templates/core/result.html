@@ -1,0 +1,596 @@
+{% extends "core/base_public.html" %}
+{% load static humanize %}
+
+{% block title %}估價結果 - SmartVal{% endblock %}
+
+{% block extra_css %}
+{# 1. Leaflet 基礎樣式 #}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+{# 2. MarkerCluster (蜘蛛網/聚合) 樣式 - 只引入結構檔，不引入 Default Theme #}
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+
+<style>
+    /* 表格樣式優化 */
+    .custom-table th { background-color: #0ea5e9; color: white; }
+    .custom-table tr:nth-child(even) { background-color: #f8fafc; }
+    .custom-table tr:hover { background-color: #f0f9ff; }
+
+    /* === 1. 目標房屋：雷達波紋效果 (含 Icon) === */
+    .radar-core {
+        width: 32px;
+        height: 32px;
+        background-color: #ef4444; /* red-500 */
+        border: 2px solid white;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white; 
+    }
+    .radar-pulse {
+        width: 60px;
+        height: 60px;
+        background-color: rgba(239, 68, 68, 0.4);
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        animation: pulse-animation 2s infinite;
+        z-index: 1;
+    }
+    @keyframes pulse-animation {
+        0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+        100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+    }
+
+    /* === 2. 周邊房屋：質感水滴標記 (SVG) === */
+    .nearby-pin-icon {
+        background: transparent;
+        border: none;
+    }
+    .nearby-pin-svg {
+        filter: drop-shadow(0px 3px 3px rgba(0,0,0,0.3));
+        transition: transform 0.2s;
+    }
+    .nearby-pin-icon:hover .nearby-pin-svg {
+        transform: scale(1.1) translateY(-5px);
+    }
+
+    /* === 3. Tooltip 資訊卡片樣式 === */
+    .custom-tooltip {
+        background: white;
+        border: none;
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        padding: 0;
+        overflow: hidden;
+    }
+    .leaflet-tooltip-left:before, .leaflet-tooltip-right:before {
+        border: none !important;
+    }
+
+    /* === [關鍵修改] 4. 自定義 MarkerCluster (強制藍色聚合樣式) === */
+    /* 使用 !important 強制覆蓋所有可能殘留的顏色設置 */
+    
+    /* 外圈 (半透明藍色) */
+    .marker-cluster-small, .marker-cluster-medium, .marker-cluster-large, 
+    .marker-cluster, .custom-cluster-blue {
+        background-color: rgba(37, 99, 235, 0.4) !important; /* Blue-600 40% */
+        border-radius: 50%;
+    }
+
+    /* 內圈 (實心藍色) */
+    .marker-cluster-small div, .marker-cluster-medium div, .marker-cluster-large div,
+    .marker-cluster div, .custom-cluster-blue div {
+        background-color: #2563eb !important; /* Blue-600 */
+        color: white !important;
+        width: 30px;
+        height: 30px;
+        margin-left: 5px;
+        margin-top: 5px;
+        text-align: center;
+        border-radius: 50%;
+        font: 12px "Helvetica Neue", Arial, Helvetica, sans-serif;
+        line-height: 30px;
+        font-weight: bold;
+        text-shadow: none !important;
+    }
+
+    /* 確保數字置中 */
+    .marker-cluster span, .custom-cluster-blue span {
+        line-height: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-slate-50 min-h-screen py-10">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+
+        {# === [新增] 定位精準度警告 (只有在退而求其次找路名時才會出現) === #}
+        {% if result.warning %}
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded-r-lg shadow-sm animate-fade-in-up">
+            <div class="flex items-start">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-yellow-800">地址定位精確度提示</h3>
+                    <div class="mt-1 text-sm text-yellow-700">
+                        <p>{{ result.warning }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {# === [修改] 智慧導航列 === #}
+        <div class="mb-6 flex justify-between items-center">
+            
+            {# 左側按鈕：依據來源決定返回哪裡 #}
+            {% if is_snapshot %}
+                {# 情境 A: 從收藏夾點進來的 -> 返回列表 #}
+                <a href="{% url 'core:favorite_list' %}" class="inline-flex items-center text-slate-500 hover:text-blue-600 font-medium transition-colors group">
+                    <svg class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    返回我的收藏
+                </a>
+            {% else %}
+                {# 情境 B: 剛估價完的結果 -> 返回首頁重新估價 #}
+                <a href="{% url 'core:home' %}" class="inline-flex items-center text-slate-500 hover:text-blue-600 font-medium transition-colors group">
+                    <svg class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                    返回首頁重新估價
+                </a>
+            {% endif %}
+
+            {# 右側：如果是新結果，提供快速前往收藏列表的入口 #}
+            {% if not is_snapshot %}
+                <a href="{% url 'core:favorite_list' %}" class="text-sm text-blue-600 hover:text-blue-800 font-medium hover:underline flex items-center">
+                    查看我的收藏列表 
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </a>
+            {% endif %}
+        </div>
+        
+        {# === 區塊 1: 估價結果摘要 === #}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="border-b border-gray-100 p-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <span class="text-blue-600">🏠</span> 您的房屋價格預測結果
+                    </h2>
+                    <p class="text-slate-500 mt-1 text-sm">
+                        估價標的：<span class="font-medium text-slate-700">{{ input_data.city }}{{ input_data.town }}{{ input_data.street }}</span>
+                    </p>
+                </div>
+                
+                {% if user.is_authenticated %}
+                    {% if is_snapshot %}
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm text-slate-400 font-medium hidden sm:inline-block">
+                                收藏於 {{ record.created_at|date:"Y/m/d" }}
+                            </span>
+                            <form action="{% url 'core:remove_favorite' record.id %}" method="post" onsubmit="return confirm('確定要移除這筆收藏嗎？');">
+                                {% csrf_token %}
+                                <button type="submit" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-500 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition shadow-sm group">
+                                    <svg class="w-5 h-5 transition group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                    <span class="font-bold">移除收藏</span>
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <div id="favorite-action-container">
+                            <button onclick="addToFavorite()" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 hover:border-pink-300 hover:bg-pink-50 text-slate-600 hover:text-pink-600 rounded-lg transition shadow-sm group">
+                                <svg class="w-5 h-5 transition group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                                <span class="font-medium">加入收藏</span>
+                            </button>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <a href="{% url 'account_login' %}?next={{ request.path }}" class="text-sm text-blue-600 hover:underline">登入以收藏結果</a>
+                {% endif %}
+            </div>
+
+            <div class="p-6 md:p-8">
+                <div class="flex flex-col lg:flex-row gap-8">
+                    {# 左側：價格大卡片 #}
+                    <div class="w-full lg:w-1/3 space-y-4">
+                        <div class="relative bg-white rounded-2xl p-6 shadow-lg border border-blue-100 overflow-hidden group hover:shadow-xl transition-shadow duration-300">
+                            <div class="absolute -right-6 -top-6 w-24 h-24 bg-blue-50 rounded-full opacity-50 transition group-hover:scale-110"></div>
+                            <div class="relative z-10">
+                                <div class="flex items-center gap-2 mb-2 text-slate-500">
+                                    <div class="p-1.5 bg-blue-100 text-blue-600 rounded-lg">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </div>
+                                    <span class="font-bold text-sm tracking-wider uppercase">預估總價</span>
+                                </div>
+                                <div class="flex items-baseline gap-1 mt-1">
+                                    <span class="text-5xl font-extrabold text-blue-600 tracking-tight">{{ result.price|floatformat:0 }}</span>
+                                    <span class="text-xl font-bold text-slate-400">萬</span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-3 flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    AI 智慧估算參考值
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="relative bg-slate-50 rounded-2xl p-5 border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <div class="flex items-center gap-2 text-slate-500 mb-1">
+                                    <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path></svg>
+                                    <span class="font-bold text-xs tracking-wider uppercase">預估單價</span>
+                                </div>
+                                <div class="flex items-baseline gap-1">
+                                    <span class="text-2xl font-bold text-slate-700">{{ unit_price|floatformat:1 }}</span>
+                                    <span class="text-sm font-medium text-slate-500">萬 / 坪</span>
+                                </div>
+                            </div>
+                            <div class="text-slate-200">
+                                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# 右側：詳細資料 === #}
+                    <div class="w-full lg:w-2/3">
+                        <div class="bg-slate-50 rounded-xl p-6 border border-slate-100 h-full flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-400 mb-6 uppercase tracking-wider flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                    輸入條件確認
+                                </h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 text-sm">
+                                    <div class="md:col-span-2 bg-white p-3 rounded-lg border border-slate-200">
+                                        <span class="block text-xs font-bold text-slate-400 mb-1">門牌地址</span>
+                                        <span class="block font-bold text-slate-800 text-lg break-words leading-relaxed">
+                                            {{ input_data.city }}{{ input_data.town }}{{ input_data.street }}
+                                        </span>
+                                    </div>
+                                    <div class="border-b border-slate-200 pb-2">
+                                        <span class="block text-xs font-bold text-slate-400 mb-1">房屋類型</span>
+                                        <span class="block font-bold text-slate-700 text-base">{{ input_data.house_type }}</span>
+                                    </div>
+                                    <div class="border-b border-slate-200 pb-2">
+                                        <span class="block text-xs font-bold text-slate-400 mb-1">屋齡</span>
+                                        <span class="block font-bold text-slate-700 text-base">{{ input_data.house_age }} 年</span>
+                                    </div>
+                                    <div class="border-b border-slate-200 pb-2">
+                                        <span class="block text-xs font-bold text-slate-400 mb-1">總樓層 / 所在樓層</span>
+                                        <span class="block font-bold text-slate-700 text-base">{{ input_data.total_floors|floatformat:0 }} 樓 / {{ input_data.floor_number|floatformat:0 }} 樓</span>
+                                    </div>
+                                    <div class="border-b border-slate-200 pb-2">
+                                        <span class="block text-xs font-bold text-slate-400 mb-1">建坪 (含公設)</span>
+                                        <span class="block font-bold text-slate-700 text-base">{{ input_data.floor_area }} 坪</span>
+                                    </div>
+                                    <div class="border-b border-slate-200 pb-2">
+                                        <span class="block text-xs font-bold text-slate-400 mb-1">地坪</span>
+                                        <span class="block font-bold text-slate-700 text-base">{{ input_data.land_area }} 坪</span>
+                                    </div>
+                                    <div class="border-b border-slate-200 pb-2">
+                                        <span class="block text-xs font-bold text-slate-400 mb-1">房間數</span>
+                                        <span class="block font-bold text-slate-700 text-base">{{ input_data.room_count }} 間</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-8 pt-6 border-t border-slate-200 flex gap-3">
+                                <a href="{% url 'core:home' %}" class="px-5 py-2.5 bg-white border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50 transition text-sm font-bold flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                    重新試算
+                                </a>
+                                <button class="flex-1 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200 text-sm font-bold flex justify-center items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 3.666A5.002 5.002 0 0115 17H9a5.002 5.002 0 01-3-4.75V11a2 2 0 012-2h3"></path></svg>
+                                    額度利率評估
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# === 區塊 2: 鄰近設施資訊 (地圖) === #}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <span class="bg-green-100 text-green-700 p-1.5 rounded-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    </span>
+                    <h3 class="text-lg font-bold text-slate-800">周邊實價登錄位置</h3>
+                </div>
+                <div class="text-xs bg-slate-100 text-slate-500 px-3 py-1.5 rounded-full flex items-center gap-1">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    顯示 10 筆最近且條件相似的房屋
+                </div>
+            </div>
+            
+            <div id="map" class="w-full z-0" style="height: 600px;"></div>
+        </div>
+
+        {# === 區塊 3: 周邊實價資訊 (表格) === #}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+            <div class="bg-blue-50 border-b border-blue-100 p-4">
+                <div class="flex gap-3">
+                    <div class="flex-shrink-0 mt-0.5">
+                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-blue-800 mb-1">AI 智慧篩選邏輯說明</h4>
+                        <p class="text-sm text-blue-600 leading-relaxed">
+                            系統依據您的輸入條件，自動從資料庫中篩選出最相似的成交案例。篩選標準包含：
+                            <span class="font-bold">同行政區、同房屋類型</span>，且滿足
+                            <span class="font-bold">屋齡 ±5 年</span>、
+                            <span class="font-bold">樓層 ±5 層</span>、
+                            <span class="font-bold">坪數 ±10 坪</span> 之條件。
+                            最後依距離排序，取最近的 10 筆資料供您參考。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-b border-gray-100 flex items-center gap-2">
+                <span class="bg-blue-100 text-blue-700 p-1.5 rounded-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                </span>
+                <h3 class="text-lg font-bold text-slate-800">周邊實價登錄列表</h3>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse custom-table">
+                    <thead>
+                        <tr class="text-sm">
+                            <th class="py-3 px-4 font-semibold rounded-tl-lg">地址</th>
+                            <th class="py-3 px-4 font-semibold">類型</th>
+                            <th class="py-3 px-4 font-semibold text-center">屋齡</th>
+                            <th class="py-3 px-4 font-semibold text-right">建坪</th>
+                            <th class="py-3 px-4 font-semibold text-right">總價(萬)</th>
+                            <th class="py-3 px-4 font-semibold text-center rounded-tr-lg">距離</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-slate-700">
+                        {% for house in result.nearby_houses %}
+                        <tr class="transition">
+                            <td class="py-3 px-4 font-medium">{{ house.address }}</td>
+                            <td class="py-3 px-4 text-slate-500">{{ house.type }}</td>
+                            <td class="py-3 px-4 text-center">{{ house.age }} 年</td>
+                            <td class="py-3 px-4 text-right font-mono">{{ house.area }}</td>
+                            <td class="py-3 px-4 text-right font-bold text-blue-600">{{ house.price }}</td>
+                            <td class="py-3 px-4 text-center text-slate-400">{{ house.distance_km }} km</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="py-8 text-center text-slate-400 bg-slate-50">
+                                查無周邊實價登錄資料
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+
+<script>
+    const BTN_ADD_HTML = `
+        <button onclick="addToFavorite()" class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-300 hover:border-pink-300 hover:bg-pink-50 text-slate-600 hover:text-pink-600 rounded-lg transition shadow-sm group">
+            <svg class="w-5 h-5 transition group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+            <span class="font-medium">加入收藏</span>
+        </button>
+    `;
+
+    function getRemoveBtnHtml(recordId) {
+        return `
+            <div class="flex items-center gap-3">
+                <span class="text-sm text-pink-600 font-bold animate-pulse">✅ 已加入收藏</span>
+                <button onclick="removeFavoriteDynamic(${recordId})" class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-500 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition shadow-sm group">
+                    <svg class="w-5 h-5 transition group-hover:scale-110" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                    </svg>
+                    <span class="font-bold">移除收藏</span>
+                </button>
+            </div>
+        `;
+    }
+
+    function addToFavorite() {
+        const container = document.getElementById('favorite-action-container');
+        container.innerHTML = '<span class="text-slate-400 text-sm">處理中...</span>';
+
+        fetch("{% url 'core:add_favorite' %}", {
+            method: "POST",
+            headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if(data.success) {
+                container.innerHTML = getRemoveBtnHtml(data.id);
+            } else {
+                alert("加入失敗：" + data.msg);
+                container.innerHTML = BTN_ADD_HTML;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("系統錯誤");
+            container.innerHTML = BTN_ADD_HTML;
+        });
+    }
+
+    function removeFavoriteDynamic(recordId) {
+        if (!confirm('確定要取消收藏嗎？')) return;
+        const container = document.getElementById('favorite-action-container');
+        container.innerHTML = '<button class="px-5 py-2.5 bg-gray-100 text-gray-400 rounded-lg flex items-center gap-2"><span class="animate-spin">⏳</span> 處理中...</button>';
+
+        fetch(`/favorites/remove/${recordId}/`, {
+            method: "POST",
+            headers: { "X-CSRFToken": "{{ csrf_token }}", "Content-Type": "application/json", "X-Requested-With": "XMLHttpRequest" },
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            if(data.success) {
+                container.innerHTML = BTN_ADD_HTML;
+            } else {
+                alert("移除失敗：" + data.msg);
+                container.innerHTML = getRemoveBtnHtml(recordId);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("系統錯誤");
+        });
+    }
+
+    // === 地圖初始化與 Marker Cluster ===
+    document.addEventListener('DOMContentLoaded', function() {
+        const target = {{ result.target_coords|default:"{}"|safe }};
+        const nearby = {{ result.nearby_houses|default:"[]"|safe }};
+        const price = "{{ result.price }}"; 
+
+        // 1. 初始化地圖
+        var map = L.map('map');
+        
+        if (target && target.lat && target.lng) {
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap'
+            }).addTo(map);
+
+            var boundsPoints = [];
+
+            // === A. 目標房屋 ===
+            const targetIcon = L.divIcon({
+                className: '',
+                html: `
+                    <div class="radar-core">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 3L4 9V21H9V14H15V21H20V9L12 3Z" fill="white"/>
+                        </svg>
+                    </div>
+                    <div class="radar-pulse"></div>
+                `,
+                iconSize: [0, 0]
+            });
+            
+            L.marker([target.lat, target.lng], {icon: targetIcon, zIndexOffset: 1000}).addTo(map);
+            boundsPoints.push([target.lat, target.lng]);
+
+            // === B. 周邊房屋 ===
+            // [關鍵修改]：這裡雖然已經自定義 class，但上面 CSS 會強制用 !important 覆寫
+            var markers = L.markerClusterGroup({
+                showCoverageOnHover: false,
+                zoomToBoundsOnClick: true,
+                spiderfyOnMaxZoom: true,
+                
+                // 1. 蜘蛛網展開時的線條顏色 (Blue)
+                spiderLegPolylineOptions: { weight: 1.5, color: '#2563eb', opacity: 0.5 },
+                
+                // 2. 聚合區域的多邊形邊界顏色 (Blue)
+                polygonOptions: { color: '#2563eb', weight: 3, opacity: 0.5, fillOpacity: 0.2 },
+                
+                // 3. Icon 樣式
+                iconCreateFunction: function(cluster) {
+                    var childCount = cluster.getChildCount();
+                    // Class name 包含 custom-cluster-blue，上面的 CSS 會抓到
+                    return new L.DivIcon({ 
+                        html: '<div><span>' + childCount + '</span></div>', 
+                        className: 'marker-cluster custom-cluster-blue', 
+                        iconSize: new L.Point(40, 40) 
+                    });
+                }
+            });
+
+            // 藍色水滴 Icon
+            const pinSvg = `
+            <svg class="nearby-pin-svg" width="36" height="36" viewBox="0 0 384 512" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#2563eb" d="M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67-9.535 13.774-29.93 13.773-39.464 0z"/>
+                <path fill="white" transform="translate(96, 128) scale(0.375)" d="M280.37 148.26L96 300.11V464a16 16 0 0 0 16 16l112.06-.29a16 16 0 0 0 15.92-16V368a16 16 0 0 1 16-16h64a16 16 0 0 1 16 16v96a16 16 0 0 0 16 16L464 480a16 16 0 0 0 16-16V300L295.67 148.26a12.19 12.19 0 0 0-15.3 0zM571.6 251.47L488 182.56V44.05a12 12 0 0 0-12-12h-56a12 12 0 0 0-12 12v72.61L318.47 43a48 48 0 0 0-61 0L4.34 251.47a12 12 0 0 0-1.6 16.9l25.5 31A12 12 0 0 0 45.15 301l232.16-191.24a15.25 15.25 0 0 1 19.4 0l232.16 191.24a12 12 0 0 0 16.9-1.6l25.5-31a12 12 0 0 0-1.61-16.93z"/>
+            </svg>`;
+
+            nearby.forEach(function(house) {
+                if(house.lat && house.lng) {
+                    const customIcon = L.divIcon({
+                        className: 'nearby-pin-icon',
+                        html: pinSvg,
+                        iconSize: [36, 36],
+                        iconAnchor: [18, 36]
+                    });
+
+                    const marker = L.marker([house.lat, house.lng], { icon: customIcon });
+
+                    const tooltipContent = `
+                        <div class="p-3 min-w-[250px]">
+                            <h4 class="font-bold text-slate-800 text-sm mb-2 border-b border-gray-100 pb-2 truncate">${house.address}</h4>
+                            <div class="flex flex-col gap-1 text-xs text-slate-600">
+                                <div class="flex justify-between">
+                                    <span>類型：${house.type}</span>
+                                    <span>建坪：${house.area}坪</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span>屋齡：${house.age}年</span>
+                                    <span>單價：${(house.price / house.area).toFixed(1)}萬/坪</span>
+                                </div>
+                            </div>
+                            <div class="mt-3 text-right">
+                                <span class="text-xs text-slate-400 mr-1">成交總價</span>
+                                <span class="text-red-600 font-bold text-lg">$${house.price}萬</span>
+                            </div>
+                        </div>
+                    `;
+
+                    marker.bindTooltip(tooltipContent, {
+                        direction: 'top',
+                        offset: [0, -36],
+                        className: 'custom-tooltip',
+                        opacity: 1
+                    });
+
+                    markers.addLayer(marker);
+                    boundsPoints.push([house.lat, house.lng]);
+                }
+            });
+
+            map.addLayer(markers);
+
+            // === 自動縮放邏輯 ===
+            if (boundsPoints.length > 0) {
+                if (boundsPoints.length === 1) {
+                    map.setView(boundsPoints[0], 18);
+                } else {
+                    var bounds = L.latLngBounds(boundsPoints);
+                    map.fitBounds(bounds, {
+                        padding: [50, 50],
+                        maxZoom: 18
+                    });
+                }
+            } else {
+                map.setView([25.0330, 121.5654], 13);
+            }
+
+        } else {
+            document.getElementById('map').innerHTML = '<div class="flex items-center justify-center h-full text-slate-400 bg-slate-100">無地圖資料</div>';
+        }
+    });
+</script>
+{% endblock %}

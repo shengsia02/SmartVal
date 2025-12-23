@@ -62,22 +62,14 @@
   {% endfor %}
 </div>
 
-{% if detail_form.non_field_errors %}
-  <div class="md:col-span-2 rounded-md bg-red-50 p-4">
-    <ul class="list-disc space-y-1 pl-5 text-sm text-red-700">
-      {% for error in detail_form.non_field_errors %}
-        <li>{{ error }}</li>
-      {% endfor %}
-    </ul>
-  </div>
-{% endif %}
+
 
 <div>
   <label class="block text-sm font-medium text-slate-700">
     縣市 <span class="text-red-500">*</span>
   </label>
-  {{ detail_form.city }} 
-  {% for error in detail_form.city.errors %}
+  {{ form.city }} 
+  {% for error in form.city.errors %}
     <p class="mt-1 text-sm text-red-600">{{ error }}</p>
   {% endfor %}
 </div>
@@ -86,8 +78,8 @@
   <label class="block text-sm font-medium text-slate-700">
     行政區 <span class="text-red-500">*</span>
   </label>
-  {{ detail_form.town }} 
-  {% for error in detail_form.town.errors %}
+  {{ form.town }} 
+  {% for error in form.town.errors %}
     <p class="mt-1 text-sm text-red-600">{{ error }}</p>
   {% endfor %}
 </div>
@@ -96,8 +88,8 @@
   <label class="block text-sm font-medium text-slate-700">
     屋齡 (年) <span class="text-red-500">*</span>
   </label>
-  {{ detail_form.house_age }}
-  {% for error in detail_form.house_age.errors %}
+  {{ form.house_age }}
+  {% for error in form.house_age.errors %}
     <p class="mt-1 text-sm text-red-600">{{ error }}</p>
   {% endfor %}
 </div>
@@ -106,8 +98,8 @@
   <label class="block text-sm font-medium text-slate-700">
     建坪 <span class="text-red-500">*</span>
   </label>
-  {{ detail_form.floor_area }}
-  {% for error in detail_form.floor_area.errors %}
+  {{ form.floor_area }}
+  {% for error in form.floor_area.errors %}
     <p class="mt-1 text-sm text-red-600">{{ error }}</p>
   {% endfor %}
 </div>
@@ -116,8 +108,8 @@
   <label class="block text-sm font-medium text-slate-700">
     地坪 <span class="text-red-500">*</span>
   </label>
-  {{ detail_form.land_area }}
-  {% for error in detail_form.land_area.errors %}
+  {{ form.land_area }}
+  {% for error in form.land_area.errors %}
     <p class="mt-1 text-sm text-red-600">{{ error }}</p>
   {% endfor %}
 </div>
@@ -126,8 +118,58 @@
   <label class="block text-sm font-medium text-slate-700">
     單價 (萬/坪) <span class="text-red-500">*</span>
   </label>
-  {{ detail_form.unit_price }}
-  {% for error in detail_form.unit_price.errors %}
+  {{ form.unit_price }}
+  {% for error in form.unit_price.errors %}
+    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+  {% endfor %}
+</div>
+
+<div>
+  <label class="block text-sm font-medium text-slate-700">
+    樓層
+  </label>
+  {{ form.floor_number }}
+  {% for error in form.floor_number.errors %}
+    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+  {% endfor %}
+</div>
+
+<div>
+  <label class="block text-sm font-medium text-slate-700">
+    總樓層
+  </label>
+  {{ form.total_floors }}
+  {% for error in form.total_floors.errors %}
+    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+  {% endfor %}
+</div>
+
+<div>
+  <label class="block text-sm font-medium text-slate-700">
+    房間數
+  </label>
+  {{ form.room_count }}
+  {% for error in form.room_count.errors %}
+    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+  {% endfor %}
+</div>
+
+<div>
+  <label class="block text-sm font-medium text-slate-700">
+    經度
+  </label>
+  {{ form.longitude }}
+  {% for error in form.longitude.errors %}
+    <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+  {% endfor %}
+</div>
+
+<div>
+  <label class="block text-sm font-medium text-slate-700">
+    緯度
+  </label>
+  {{ form.latitude }}
+  {% for error in form.latitude.errors %}
     <p class="mt-1 text-sm text-red-600">{{ error }}</p>
   {% endfor %}
 </div>
@@ -136,21 +178,21 @@
   <label class="block text-sm font-medium text-slate-700">
     出售日期 <span class="text-red-500">*</span>
   </label>
-  {{ detail_form.sold_time }}
-  {% for error in detail_form.sold_time.errors %}
+  {{ form.sold_time }}
+  {% for error in form.sold_time.errors %}
     <p class="mt-1 text-sm text-red-600">{{ error }}</p>
   {% endfor %}
 </div>
 
 <div>
   <label class="block text-sm font-medium text-slate-700">圖片</label>
-  {{ detail_form.house_image }}
-  {% for error in detail_form.house_image.errors %}
+  {{ form.house_image }}
+  {% for error in form.house_image.errors %}
     <p class="mt-1 text-sm text-red-600">{{ error }}</p>
   {% endfor %}
-  {% if detail_form.instance.house_image %}
+  {% if form.instance.house_image %}
     <p class="mt-2 text-sm text-slate-500">
-      目前圖片: <a href="{{ detail_form.instance.house_image.url }}" target="_blank" class="text-blue-600 hover:underline">{{ detail_form.instance.house_image.name }}</a>
+      目前圖片: <a href="{{ form.instance.house_image.url }}" target="_blank" class="text-blue-600 hover:underline">{{ form.instance.house_image.name }}</a>
     </p>
   {% endif %}
 </div>
