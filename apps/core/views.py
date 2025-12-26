@@ -100,6 +100,11 @@ class HomeView(FormView):
                 'errors': form.errors
             }, status=400)
         return super().form_invalid(form)
+    
+# 新增這個簡單的 view
+def coming_soon(request):
+    """顯示「功能建置中」的幽默頁面"""
+    return render(request, "core/coming_soon.html")
 
 
 # ==========================================
