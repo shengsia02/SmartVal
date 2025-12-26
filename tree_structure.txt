@@ -35,8 +35,10 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 ├─core
 │  │  admin.py
 │  │  apps.py
+│  │  consumers.py
 │  │  forms.py
 │  │  models.py
+│  │  routing.py
 │  │  services.py
 │  │  tasks.py
 │  │  tests.py
@@ -61,8 +63,32 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 │  │      │      global.css
 │  │      │      
 │  │      ├─images
-│  │      │      background_ntpu.jpg
-│  │      │      
+│  │      │  │  background_ntpu.jpg
+│  │      │  │  favicon.png
+│  │      │  │  
+│  │      │  └─cities
+│  │      │          changhua.jpg
+│  │      │          chiayi_city.jpg
+│  │      │          chiayi_county.jpg
+│  │      │          hsinchu_city.jpg
+│  │      │          hsinchu_county.jpg
+│  │      │          hualien.jpg
+│  │      │          kaohsiung.jpg
+│  │      │          keelung.jpg
+│  │      │          kinmen.jpg
+│  │      │          miaoli.jpg
+│  │      │          nantou.jpg
+│  │      │          newtaipei.jpg
+│  │      │          penghu.jpg
+│  │      │          pingtung.jpg
+│  │      │          taichung.jpg
+│  │      │          tainan.jpg
+│  │      │          taipei.jpg
+│  │      │          taitung.jpg
+│  │      │          taoyuan.jpg
+│  │      │          yilan.jpg
+│  │      │          yunlin.jpg
+│  │      │          
 │  │      └─js
 │  │              estimation_handler.js
 │  │              global.js
@@ -75,13 +101,24 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 │  │          dashboard_home.html
 │  │          favorite_list.html
 │  │          home.html
+│  │          import_data.html
 │  │          result.html
+│  │          
+│  ├─templatetags
+│  │  │  city_tags.py
+│  │  │  __init__.py
+│  │  │  
+│  │  └─__pycache__
+│  │          city_tags.cpython-310.pyc
+│  │          __init__.cpython-310.pyc
 │  │          
 │  └─__pycache__
 │          admin.cpython-310.pyc
 │          apps.cpython-310.pyc
+│          consumers.cpython-310.pyc
 │          forms.cpython-310.pyc
 │          models.cpython-310.pyc
+│          routing.cpython-310.pyc
 │          services.cpython-310.pyc
 │          tasks.cpython-310.pyc
 │          urls.cpython-310.pyc
@@ -95,6 +132,7 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 │  │  forms.py
 │  │  routing.py
 │  │  signals.py
+│  │  tasks.py
 │  │  tests.py
 │  │  urls.py
 │  │  views.py
@@ -170,6 +208,7 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\APPS
 │          models.cpython-310.pyc
 │          routing.cpython-310.pyc
 │          signals.cpython-310.pyc
+│          tasks.cpython-310.pyc
 │          urls.cpython-310.pyc
 │          views.cpython-310.pyc
 │          __init__.cpython-310.pyc
@@ -239,13 +278,17 @@ No subfolders exist
 Folder PATH listing for volume Acer
 Volume serial number is 640B-D921
 C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\MEDIA
-└─house_images
-        台北101.jpg
-        台北大學.jpg
-        台北大學_8ppRAXi.jpg
-        台北大學_qJIRHsx.jpg
-        台大社科院圖書館.jpg
-        台灣大學.jpg
+├─house_images
+│      台北101.jpg
+│      台北大學.jpg
+│      台北大學_8ppRAXi.jpg
+│      台北大學_qJIRHsx.jpg
+│      台大社科院圖書館.jpg
+│      台灣大學.jpg
+│      
+└─tmp
+        data - Copy.xlsx
+        data - Copy_HIJUUqZ.xlsx
         
 Folder PATH listing for volume Acer
 Volume serial number is 640B-D921
@@ -808,9 +851,33 @@ C:\USERS\SHENG\DOCUMENTS\NTPU_MASTER\YEAR_1\Y1_SEM_1\FULLSTACKPY\STATICFILES
 │  │      global.f53cc098ca40.css.gz
 │  │      
 │  ├─images
-│  │      background_ntpu.8132873b0020.jpg
-│  │      background_ntpu.jpg
-│  │      
+│  │  │  background_ntpu.8132873b0020.jpg
+│  │  │  background_ntpu.jpg
+│  │  │  favicon.png
+│  │  │  
+│  │  └─cities
+│  │          changhua.jpg
+│  │          chiayi_city.jpg
+│  │          chiayi_county.jpg
+│  │          hsinchu_city.jpg
+│  │          hsinchu_county.jpg
+│  │          hualien.jpg
+│  │          kaohsiung.jpg
+│  │          keelung.jpg
+│  │          kinmen.jpg
+│  │          miaoli.jpg
+│  │          nantou.jpg
+│  │          newtaipei.jpg
+│  │          penghu.jpg
+│  │          pingtung.jpg
+│  │          taichung.jpg
+│  │          tainan.jpg
+│  │          taipei.jpg
+│  │          taitung.jpg
+│  │          taoyuan.jpg
+│  │          yilan.jpg
+│  │          yunlin.jpg
+│  │          
 │  └─js
 │          estimation_handler.1617be3ffa1f.js
 │          estimation_handler.1617be3ffa1f.js.gz

@@ -1,0 +1,57 @@
+{% extends "core/base_public.html" %}
+
+{% block title %}修但幾勒！工程師趕工中... - SmartVal{% endblock %}
+
+{# === 修正重點：補上 Font Awesome 的 CSS 連結 === #}
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="min-h-[calc(100vh-300px)] flex items-center justify-center py-16 px-4 bg-slate-50">
+    <div class="max-w-2xl w-full text-center">
+        
+        <div class="mb-12 relative inline-block">
+            <i class="fas fa-laptop-code text-9xl text-slate-200/80"></i>
+            
+            <div class="absolute -top-8 left-1/2 -translate-x-1/2 animate-bounce-slow">
+                <i class="fas fa-cat text-7xl text-blue-600"></i>
+            </div>
+            
+            <i class="fas fa-mug-hot text-4xl text-amber-600 absolute bottom-2 -left-10 rotate-[-15deg]"></i>
+            <i class="fas fa-mug-hot text-3xl text-amber-700/70 absolute -bottom-4 right-0 rotate-[30deg]"></i>
+            
+            <i class="fas fa-code text-2xl text-blue-400 absolute top-0 -right-8 animate-pulse"></i>
+            <i class="fas fa-bug text-xl text-red-400 absolute bottom-10 -right-12 rotate-45"></i>
+        </div>
+
+        <h1 class="text-3xl md:text-4xl font-extrabold text-slate-800 mb-6 tracking-tight">
+            修但幾勒！<br class="sm:hidden">工程師正在光速趕工中...
+        </h1>
+
+        <p class="text-lg md:text-xl text-slate-600 mb-10 leading-relaxed">
+            我們的團隊正在用鍵盤敲出火花，試圖把這個功能變出來。<br>
+            但目前似乎還需要一點時間（和幾杯濃縮咖啡）。<br>
+            <span class="block mt-4 font-medium text-blue-600">別擔心，好東西值得等待！</span>
+        </p>
+
+        {# 這裡的 inline-flex items-center justify-center 是正確的 #}
+        {# 加上 CSS 後，箭頭會出現，mr-3 會推開箭頭與文字，整體會視覺置中 #}
+        <a href="{% url 'core:home' %}" class="inline-flex items-center justify-center px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition transform hover:-translate-y-1 group">
+            <i class="fas fa-arrow-left mr-3 group-hover:-translate-x-1 transition-transform"></i>
+            <span>先回首頁看看</span>
+        </a>
+
+    </div>
+</div>
+
+<style>
+    @keyframes bounce-slow {
+        0%, 100% { transform: translateY(-5%) translateX(-50%); animation-timing-function: cubic-bezier(0.8, 0, 1, 1); }
+        50% { transform: translateY(0) translateX(-50%); animation-timing-function: cubic-bezier(0, 0, 0.2, 1); }
+    }
+    .animate-bounce-slow {
+        animation: bounce-slow 3s infinite;
+    }
+</style>
+{% endblock %}

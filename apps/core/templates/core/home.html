@@ -8,6 +8,34 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+
+<style>
+    /* 1. 定義由下往上浮現的動畫關鍵影格 */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px); /* 初始位置向下偏移 30px */
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0); /* 最終位置歸零 */
+        }
+    }
+
+    /* 2. 應用動畫的類別 */
+    .animate-enter {
+        opacity: 0; /* 預設隱藏，避免動畫開始前閃爍 */
+        animation: fadeInUp 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; /* 使用流暢的緩動函數 */
+    }
+
+    /* 3. 設定不同的延遲時間，創造「漸進」效果 */
+    .delay-100 { animation-delay: 0.1s; }
+    .delay-200 { animation-delay: 0.2s; }
+    .delay-300 { animation-delay: 0.3s; }
+    .delay-400 { animation-delay: 0.4s; }
+    .delay-500 { animation-delay: 0.5s; }
+</style>
+
 {% endblock %}
 
 {% block content %}
@@ -19,19 +47,19 @@
     {# 黑色遮罩 (讓文字更清晰，可選) #}
     <div class="relative z-10 w-full max-w-3xl px-4">
         
-        <div class="relative bg-white/85 backdrop-blur-md shadow-2xl rounded-2xl p-4 sm:p-6 compact-mode-padding overflow-hidden border border-white/40">
+        <div class="relative bg-white/85 backdrop-blur-md shadow-2xl rounded-2xl p-4 sm:p-6 compact-mode-padding overflow-hidden border border-white/40 animate-enter">
             
             <form method="post" class="space-y-4 compact-mode-space" id="estimation-form" novalidate>
                 {% csrf_token %}
                 
                 <div class="space-y-5">
-                    <div class="flex justify-between items-center pb-3 border-b border-gray-200">
+                    <div class="flex justify-between items-center pb-3 border-b border-gray-200 animate-enter delay-100">
                         <h2 class="text-xl font-bold text-slate-800">房屋資訊</h2>
                         <span class="text-xs font-medium text-red-600 bg-red-50 px-2 py-1 rounded">* 欄位皆必填</span>
                     </div>
                     
                     {# 1. 地址欄位組 #}
-                    <div class="space-y-1"> 
+                    <div class="space-y-1 animate-enter delay-200"> 
                         <label class="block text-sm font-bold text-gray-700">地址</label>
                         <div class="grid grid-cols-12 gap-2">
                             <div class="col-span-12 sm:col-span-3">{{ form.city|add_class:"w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 transition compact-input" }}</div>
@@ -40,7 +68,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-2 sm:gap-x-4 sm:gap-y-3">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-3 gap-y-2 sm:gap-x-4 sm:gap-y-3 animate-enter delay-300">
                         {# 2-8 欄位 (保持不變) #}
                         <div>
                             <label class="block text-sm font-bold text-gray-700 mb-1">房屋類型</label>
@@ -92,7 +120,7 @@
                 </div>
 
                 {# 按鈕區域 #}
-                <div class="pt-2 flex justify-center gap-3">
+                <div class="pt-2 flex justify-center gap-3 animate-enter delay-400">
                     <button type="submit" class="w-full sm:w-auto px-8 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-0.5 text-sm sm:text-base">
                         開始估價
                     </button>

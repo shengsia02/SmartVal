@@ -33,4 +33,7 @@ urlpatterns = [
     path('favorites/<int:pk>/', views.FavoriteDetailView.as_view(), name='favorite_detail'),
     
     path('favorites/remove/<int:pk>/', views.RemoveFavoriteView.as_view(), name='remove_favorite'),
+
+    # 新增這行路由
+    path("coming-soon/", views.coming_soon, name="coming_soon"),
 ]
